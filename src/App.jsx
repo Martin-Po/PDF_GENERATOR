@@ -138,6 +138,22 @@ function App() {
     }
   };
 
+  const resetFields = async () => {
+    let newFormData = 
+    {
+      id_usuario: "",
+      nombre: "",
+      apellido: "",
+      dni: "",
+      fecha_emision: "",
+      fecha_vencimiento: "",
+      imageUrl: "", // Store image URL
+      imageFile: null, // Store selected file
+    };
+
+    setFormData(newFormData);
+  };
+
   return (
     <Container maxWidth="sm">
       <Paper elevation={3} sx={{ p: 4, mt: 4, textAlign: "center" }}>
@@ -268,8 +284,8 @@ function App() {
         )}
 
         <Box mt={2} display="flex" justifyContent="space-between">
-          <Button variant="contained" color="primary" onClick={generateQR}>
-            Generar QR
+          <Button variant="contained" color="primary" onClick={resetFields}>
+            RESETEAR
           </Button>
           <Button
             variant="contained"

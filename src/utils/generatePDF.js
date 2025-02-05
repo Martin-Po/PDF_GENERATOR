@@ -96,7 +96,7 @@ export const generatePDF = (qrValue, formData) => {
 
     pdf.addPage();
 
-    pdf.setLineWidth(0.03); // Makes the border thinner
+    pdf.setLineWidth(0.035); // Makes the border thinner
     pdf.setDrawColor(200, 200, 200); // Sets a light grey color
     pdf.roundedRect(2.1, 4.25, 16.62, 5.4, 0.15, 0.15, "S"); // Draw the rectangle
 
@@ -112,11 +112,8 @@ export const generatePDF = (qrValue, formData) => {
 
 
 
-
-
-
-
-
     // Save the PDF
-    pdf.save("user_qr.pdf");
+    const pdfBlob = pdf.output("blob");
+    const pdfURL = URL.createObjectURL(pdfBlob);
+    window.open(pdfURL, "_blank");
   };
