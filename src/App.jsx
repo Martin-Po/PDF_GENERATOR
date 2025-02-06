@@ -106,7 +106,7 @@ function App() {
   const generateQR = () => {
     console.log("Generating QR Code...");
     
-    const dataString = `Nombre: ${formData.nombre}\nApellido: ${formData.apellido}\nDNI: ${formData.dni}`;
+    const dataString = `https://cursos29.infomatika.app/certificados/index.php?idp=${formData.id_usuario}`;
     setQrValue(dataString);
     return dataString;
   };
@@ -292,7 +292,7 @@ function App() {
             color="secondary"
             onClick={handleGeneratePDF}
           >
-            Descargar PDF
+            Generar PDF
           </Button>
         </Box>
 
