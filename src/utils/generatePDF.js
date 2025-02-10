@@ -76,6 +76,14 @@ export const generatePDF = (qrValue, formData) => {
     pdf.addImage(image, format, x, y, height, width);
   };
 
+  const formatDate = (date) => {
+    const formatedDate = new Date(date); // Ensure it's a Date object
+    const day = String(formatedDate.getDate()).padStart(2, "0");
+    const month = String(formatedDate.getMonth() + 1).padStart(2, "0");
+    const year = formatedDate.getFullYear();
+    return (`${day}/${month}/${year}`);
+    }
+
 
   // Set font size
   pdf.setFontSize(16);
@@ -155,32 +163,89 @@ export const generatePDF = (qrValue, formData) => {
   
 
    // Add Image (either from URL or File)
-  pdf.addImage(formData.imageFile, "JPEG", 2.43, 4.485, 2, 2);
+  pdf.addImage(formData.imageFile, "JPEG", 2.43, 4.485, 2, 2);//Carnet photo
 
 
-  //Bottom card rectangle 
+  //First credential square
+
+  //Bottom black rectangle
   pdf.setFillColor(35, 31, 32); // Same color as the original shape
   pdf.roundedRect(2.08, 8.75, 8.26, 0.85, 0.15, 0.15, "F"); // Draw the rectangle
   pdf.setFillColor("white"); // Same color as the original shape
   pdf.rect(2.08, 8.31, 8.26, 0.55, "F"); // Covers only the top part
-  //Bottom card rectangle 
+
+  pdf.setTextColor("white");
+  pdf.setFontSize(6.5);
+  let auxtextWidth =  pdf.getTextWidth("En cumplimiento al Art. 12 de la Resolución 960/2015 de la S.R.T")
+  let auxtextHeight = pdf.getTextDimensions("En cumplimiento al Art. 12 de la Resolución 960/2015 de la S.R.T").h;
+  auxtextHeight = auxtextHeight * 0.75;// Substracting 25% of the height representing the top margin
+  pdf.text("En cumplimiento al Art. 12 de la Resolución 960/2015 de la S.R.T", 2.08 + 8.28/2 - auxtextWidth/2, 8.86 + auxtextHeight/2 + 0.72/2);
+  //Bottom black rectangle
+
+  //QR section
   pdf.setFillColor(237, 28, 36); // Red
-  pdf.rect(2.43, 6.485, 2, 2.375, "F"); // Covers only the top part
-
-
+  pdf.rect(2.43, 6.485, 2, 2.375, "F"); // Background
   pdf.setFillColor("white"); // 
-  pdf.rect(2.43 + 1 - (1.5/2), 6.79, 1.5, 1.5, "F"); // Covers only the top part
-  pdf.addImage(qrImage, "PNG", 2.43 + 1 - (1.39/2), 6.79 + 1.5/ 2 - 1.39/2, 1.39, 1.39);
-
+  pdf.rect(2.43 + 1 - (1.5/2), 6.79, 1.5, 1.5, "F"); // Inner white square
+  pdf.addImage(qrImage, "PNG", 2.43 + 1 - (1.39/2), 6.79 + 1.5/ 2 - 1.39/2, 1.39, 1.39);  
   pdf.setFontSize(5.65);
   pdf.setTextColor("white");
   pdf.setFont("Montserrat", "bold");
   pdf.text(`ESCANEAR QR`, 2.42 + 1 - (1.5/2), 8.6);
+  //QR section
+
+  //Top black rectangle
+  pdf.setFillColor(35, 31, 32); // Same color as the original shape
+  pdf.rect(4.6, 4.63, 5.55, 0.38, "F"); // Draw the rectangle
+  auxtextWidth =  pdf.getTextWidth("AUTORIZACION MANEJO SEGURO AUTOELEVADOR")
+  auxtextHeight = pdf.getTextDimensions("AUTORIZACION MANEJO SEGURO AUTOELEVADOR").h;
+  auxtextHeight = auxtextHeight * 0.75;// Substracting 25% of the height representing the top margin
+  pdf.text("AUTORIZACION MANEJO SEGURO AUTOELEVADOR", 4.6 + 5.55/2 - auxtextWidth/2, 4.63 + auxtextHeight/2 + 0.38/2);
+  //Top black rectangle
+
+  pdf.setTextColor(237, 28, 36); // Red
+  pdf.setFontSize(8);
+  pdf.text(formData.apellido.toUpperCase() + ", " + formData.nombre.toUpperCase(), 5, 5.7)
+
+  pdf.setFont("IBMPlex", "normal"); // Using normal (non-bold) for regular text
+  pdf.setTextColor(109, 110, 113);
+  pdf.text("DNI: " + formData.dni, 4.63, 6.39);
+  pdf.text("FECHA: " + formatDate(formData.fecha_emision), 4.63, 6.78);
+
+  pdf.setTextColor(237, 28, 36); // Red
+  pdf.setFont("IBMPlex", "bold"); // Using normal (non-bold) for regular text 
+  pdf.text("VENCE: " + formatDate(formData.fecha_vencimiento), 4.63, 7.18);
+  pdf.setTextColor(109, 110, 113);
+  pdf.setFont("IBMPlex", "normal"); // Using normal (non-bold) for regular text
+  pdf.setFontSize(6);
+  pdf.text("Alcance: Vehículos hasta 3500 kg.", 4.63, 7.61);
+
+  pdf.addImage(firmaPNG, "PNG", 8.75, 7.07, 1.3, 1.6);
+  pdf.addImage(cursos29_logo, "PNG", 7.72, 5.98, 1.85, 1.85);
+
+
+  pdf.setFont("Montserrat", "bold");
+  pdf.setFontSize(6.5);
+  pdf.text("Instructor: Lic. Alan Guerrero", 4.63, 8.1);
+
+
+  
+
+
+
+
+
+
+
+
+
+
 
 
   pdf.setDrawColor(209, 211, 212); // Sets a light grey color
   pdf.roundedRect(2.08, 4.185, 8.26, 5.4, 0.15, 0.15, "S"); // Draw the rectangle
 
+  //Second credential square
   pdf.roundedRect(10.505, 4.185, 8.26, 5.4, 0.15, 0.15, "S"); // Draw the rectangle
 
   // Footer
