@@ -1,6 +1,10 @@
 import { jsPDF } from "jspdf";
 import cursos29_logo from "../assets/cursos29_logo.png";
 import firmaPNG from "../assets/firma.png";
+import clark_logo from "../assets/clark_logo.png";
+import cursos29_logo2 from "../assets/cursos29_logo_2.png";
+import person_icon from "../assets/person_icon.png";
+import whatsapp_icon from "../assets/whatsapp_icon.png";
 import { montserratFont } from "../assets/fonts/Montserrat-Regular-normal";
 import { ibmplexFont } from "../assets/fonts/IBMPlexSans-Regular-normal";
 import { ibmplexBoldFont } from "../assets/fonts/IBMPlexSans-Bold-bold";
@@ -205,6 +209,8 @@ export const generatePDF = (qrValue, formData) => {
 
   pdf.setTextColor(237, 28, 36); // Red
   pdf.setFontSize(8);
+  pdf.addImage(person_icon, "PNG", 4.62, 5.39, 0.32, 0.4);
+
   pdf.text(formData.apellido.toUpperCase() + ", " + formData.nombre.toUpperCase(), 5, 5.7)
 
   pdf.setFont("IBMPlex", "normal"); // Using normal (non-bold) for regular text
@@ -228,25 +234,45 @@ export const generatePDF = (qrValue, formData) => {
   pdf.setFontSize(6.5);
   pdf.text("Instructor: Lic. Alan Guerrero", 4.63, 8.1);
 
-
-  
-
-
-
-
-
-
-
-
-
-
-
-
   pdf.setDrawColor(209, 211, 212); // Sets a light grey color
   pdf.roundedRect(2.08, 4.185, 8.26, 5.4, 0.15, 0.15, "S"); // Draw the rectangle
 
+
+
   //Second credential square
   pdf.roundedRect(10.505, 4.185, 8.26, 5.4, 0.15, 0.15, "S"); // Draw the rectangle
+
+  pdf.addImage(clark_logo, "PNG", 11.03, 4.62, 1.08, 1.08);
+  pdf.setTextColor(237, 28, 36); // Red
+  pdf.setFontSize(20);
+  pdf.text("IMPORTANTE!", 12.87, 5.45)
+  pdf.addImage(cursos29_logo2, "PNG", 17.02, 7.81, 1.28, 1.28);
+  pdf.setFillColor("black"); 
+  pdf.setFont("Montserrat", "normal");
+  pdf.setTextColor("black");
+  pdf.setFontSize(5.5);
+  pdf.circle(11.07, 6.18, 0.035, "F");
+  pdf.text("Inspeccione el equipo antes de cada uso.", 11.30, 6.24)
+  pdf.circle(11.07, 6.44, 0.035, "F");
+  pdf.text("Informe desperfectos o daños del equipo", 11.30, 6.5)
+  pdf.circle(11.07, 6.7, 0.035, "F");
+  pdf.text("Si es necesario hacer reparaciones, coloque un rótulo bien", 11.30, 6.76)
+  pdf.text('visible: "NO OPERAR" y retire la llave de arranque', 11.30, 7.02);
+  pdf.text('Conduzca lentamente en curvas.', 11.30, 7.28);
+  pdf.circle(11.07, 7.22, 0.035, "F");
+  pdf.circle(11.07, 7.48, 0.035, "F");
+  pdf.text('No transportar personas.', 11.30, 7.54);
+  pdf.circle(11.07, 7.74, 0.035, "F");
+  pdf.text('No estacionar en pendientes ni salida de emergencia.', 11.30, 7.8);
+  pdf.circle(11.07, 8, 0.035, "F");
+  pdf.text('Utilice SIEMPRE el cinturon de seguridad.', 11.30, 8.06);
+  pdf.circle(11.07, 8.26, 0.035, "F");
+  pdf.text('Tenga su carnet vigente.', 11.30, 8.32);
+
+  pdf.setFont("Montserrat", "bold");   
+  pdf.addImage(whatsapp_icon, "PNG", 11, 8.82, 0.3, 0.3);
+
+    pdf.text("1158059750 | 0810 220 1029 | www.cursos29.com.ar", 11.44, 9.05)
 
   // Footer
   footer(pdf)
