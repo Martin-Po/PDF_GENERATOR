@@ -211,7 +211,18 @@ export const generatePDF = (qrValue, formData) => {
   pdf.setFontSize(8);
   pdf.addImage(person_icon, "PNG", 4.62, 5.39, 0.32, 0.4);
 
-  pdf.text(formData.apellido.toUpperCase() + ", " + formData.nombre.toUpperCase(), 5, 5.7)
+  const nombreCompleto = formData.apellido.toUpperCase() + ", " + formData.nombre.toUpperCase();
+  let fontSize = 8    
+  while(pdf.getTextWidth(nombreCompleto) > 5.2)
+  {
+    fontSize -= 0.1;
+    pdf.setFontSize(fontSize);
+  }
+
+
+
+
+  pdf.text(nombreCompleto, 5, 5.7)
 
   pdf.setFont("IBMPlex", "normal"); // Using normal (non-bold) for regular text
   pdf.setTextColor(109, 110, 113);
