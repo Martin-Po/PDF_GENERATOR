@@ -126,9 +126,14 @@ export const generatePDF = (qrValue, formData) => {
   pdf.setFontSize(13);
   pdf.setTextColor(109, 110, 113);
   addCenterAlignedText(pdf, formData.dni, 10.02);
+  
+  pdf.setTextColor(237, 28, 36); // Red
+  pdf.setFont("IBMPlex", "bold"); // Using normal (non-bold) for regular text 
+  addCenterAlignedText(pdf, "VENCE: " + formatDate(formData.fecha_vencimiento), 11);
+  
+  
+  
   pdf.setTextColor("black");
-
-
   pdf.setFont("Montserrat", "normal"); // Using normal (non-bold) for regular text
   pdf.setFontSize(14);
   pdf.text("A quien corresponda:", 1.08, 12.53);
@@ -224,6 +229,7 @@ export const generatePDF = (qrValue, formData) => {
 
   pdf.text(nombreCompleto, 5, 5.7)
 
+  pdf.setFontSize(8);
   pdf.setFont("IBMPlex", "normal"); // Using normal (non-bold) for regular text
   pdf.setTextColor(109, 110, 113);
   pdf.text("DNI: " + formData.dni, 4.63, 6.39);
@@ -289,12 +295,27 @@ export const generatePDF = (qrValue, formData) => {
   footer(pdf)
   // Footer
 
+  // pdf.setProperties({
+  //   name: 'test',
+  //   title: "invoice-pdf",
+  //   subject: "This is the subject",
+  //   author: "Author Name",
+  //   keywords: "generated, javascript, web 2.0, ajax",
+  //   creator: "kabir",
+  //   });
+
+    
+  // var string = pdf.output('datauristring');
+  // var embed = "<embed width='100%' height='100%' src='" + string + "'/>"
+  // var x = window.open();
+  // x.document.open();
+  // x.document.write(embed);
+  // x.document.close();
 
 
-
-  // Save the PDF
+  // // // Save the PDF
   const pdfBlob = pdf.output("blob");
   const pdfURL = URL.createObjectURL(pdfBlob);
   window.open(pdfURL, "_blank");
-  // pdf.save("user_qr.pdf");
+  // // pdf.save("user_qr.pdf");
 };
