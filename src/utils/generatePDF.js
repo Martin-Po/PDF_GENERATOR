@@ -12,7 +12,7 @@ import { montserratBoldFont } from "../assets/fonts/Montserrat-Bold-bold";
 
 
 
-export const generatePDF = (qrValue, formData) => {
+export const generatePDF = (qrValue, formData, download) => {
   console.log("QR Value:", qrValue);
   console.log("Form Data:", formData);
   console.log("Apellido:", formData.apellido);
@@ -295,27 +295,16 @@ export const generatePDF = (qrValue, formData) => {
   footer(pdf)
   // Footer
 
-  // pdf.setProperties({
-  //   name: 'test',
-  //   title: "invoice-pdf",
-  //   subject: "This is the subject",
-  //   author: "Author Name",
-  //   keywords: "generated, javascript, web 2.0, ajax",
-  //   creator: "kabir",
-  //   });
-
+  if (download) {
+    pdf.setProperties({ title: "Carnet.pdf" });
     
-  // var string = pdf.output('datauristring');
-  // var embed = "<embed width='100%' height='100%' src='" + string + "'/>"
-  // var x = window.open();
-  // x.document.open();
-  // x.document.write(embed);
-  // x.document.close();
+    const fileName = `${formData.apellido}, ${formData.nombre} - Carnet Res 960 SRT.pdf`;
+    pdf.save(fileName);
+  } else {
+    const pdfBlob = pdf.output("blob", { title: "Carnet.pdf" });
+    const fileURL = URL.createObjectURL(pdfBlob);
+    window.open(fileURL, "_blank");
+  }
 
-
-  // // // Save the PDF
-  const pdfBlob = pdf.output("blob");
-  const pdfURL = URL.createObjectURL(pdfBlob);
-  window.open(pdfURL, "_blank");
-  // // pdf.save("user_qr.pdf");
+  return true
 };

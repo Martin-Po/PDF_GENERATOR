@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { TextField, Button, Container, Paper, Typography, Box, IconButton } from "@mui/material";
 import { QRCodeCanvas } from "qrcode.react";
 import FileUploadIcon from "@mui/icons-material/FileUpload";
+import error_image from "./assets/error_image.png";
 import { useRef } from "react";
 import { generatePDF } from "./utils/generatePDF";
 
@@ -21,6 +22,8 @@ function App() {
   const [qrValue, setQrValue] = useState("");
   const fileInputRef = useRef(null);
   const [errors, setErrors] = useState({});
+  const [download, setDownload] = useState(false);
+
 
   useEffect(() => {
     // When imageUrl changes, fetch the image
@@ -30,6 +33,8 @@ function App() {
   }, [formData.imageUrl]); // This hook runs whenever imageUrl changes
 
   const handleChange = (e) => {
+    setDownload(false);
+
     const { name, value } = e.target;
 
     switch (name) {
@@ -79,13 +84,27 @@ function App() {
       const res = await fetch(imageUrl);
       if (!res.ok) {
         throw new Error(`HTTP error! Status: ${res.status}`);
-      }      
+      }   
+
+      if (!res.blob.size < 1000) {
+        throw new Error(`Error fetching image`);
+      }   
+      
+      
       const imageBlob = await res.blob();
       setFormData((prev) => ({
         ...prev,
         imageFile: URL.createObjectURL(imageBlob),
       }));
-    } catch (error) {
+    } catch (error) {    
+      setFormData((prev) => ({
+        ...prev,
+        imageFile: null,
+      }));  
+    let newErrors = {};
+    newErrors.imageFile = "Error al cargar la imagen"
+    setErrors(newErrors);
+
       console.log("Error fetching image:", error);
     }
   };
@@ -134,7 +153,8 @@ function App() {
   const handleGeneratePDF = async () => {
     if (validateForm()) {
       const newQRValue = await generateQR(formData.id_usuario);
-      generatePDF(newQRValue, formData);
+      if (generatePDF(newQRValue, formData, download)) {
+        setDownload(true);}
     }
   };
 
@@ -150,8 +170,12 @@ function App() {
       imageUrl: "", // Store image URL
       imageFile: null, // Store selected file
     };
-
+    let newErrors = {};
+    
+    setDownload(false);
     setFormData(newFormData);
+    setErrors(newErrors);
+    setQrValue('')
   };
 
   return (
@@ -255,12 +279,12 @@ function App() {
             style={{ display: "none" }} // Hide the input
           />
         </Box>
-        {formData.imageFile && (
-          <Box mt={2} sx={{ display: "flex", alignItems: "center", justifyContent:"space-evenly" ,flexDirection: "row" }}>
+        {(formData.imageFile || errors.imageFile) && (
+          <Box mt={2} sx={{ display: "flex", alignItems: "flex-start", justifyContent:"space-evenly" ,flexDirection: "row" }}>
             <Box>
             <Typography variant="h6">Imagen</Typography>
             <img
-              src={formData.imageFile}
+              src={(errors.imageFile && !formData.imageFile) ? error_image : formData.imageFile}
               alt="Preview"
               style={{
                 maxWidth: '200px',
@@ -273,7 +297,7 @@ function App() {
 
             </Box>
             {qrValue && (
-          <Box mt={3} >
+          <Box >
             <Typography variant="h6">QR Code</Typography>
             <Box id="qr-code" mt={1} display="flex" justifyContent="center">
               <QRCodeCanvas value={qrValue} size={150} />
@@ -287,13 +311,25 @@ function App() {
           <Button variant="contained" color="primary" onClick={resetFields}>
             RESETEAR
           </Button>
-          <Button
+          {
+            download ?
+            <Button
+            variant="contained"
+            color="success"
+            onClick={handleGeneratePDF}
+          >
+            Descargar PDF
+          </Button>
+            :
+            <Button
             variant="contained"
             color="secondary"
             onClick={handleGeneratePDF}
           >
             Generar PDF
           </Button>
+          }
+         
         </Box>
 
         
