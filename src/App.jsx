@@ -110,6 +110,7 @@ function App() {
   };
   // Handle image file selection
   const handleFileChange = (e) => {
+    setDownload(false);
     const file = e.target.files[0];
     if (!file) return;
 
