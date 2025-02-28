@@ -158,7 +158,7 @@ const CSVPDFBatchGenerator = () => {
 
     const handleGeneratePDF = async () => {
         if (generatePDFBatch(csvData, download)) {
-            setDownload(true);
+            // setDownload(true);
         }
     };
 
