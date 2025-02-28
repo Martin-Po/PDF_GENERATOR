@@ -82,9 +82,9 @@ export const generatePDF = (qrValue, formData, download) => {
 
   const formatDate = (date) => {
     const formatedDate = new Date(date); // Ensure it's a Date object
-    const day = String(formatedDate.getDate()).padStart(2, "0");
-    const month = String(formatedDate.getMonth() + 1).padStart(2, "0");
-    const year = formatedDate.getFullYear();
+    const day = String(formatedDate.getUTCDate()).padStart(2, "0");
+    const month = String(formatedDate.getUTCMonth() + 1).padStart(2, "0");
+    const year = formatedDate.getUTCFullYear();
     return (`${day}/${month}/${year}`);
     }
 
