@@ -1,5 +1,6 @@
+/* eslint-disable react/prop-types */
 import { useState } from "react";
-import { Button, Typography, Box, Alert } from "@mui/material";
+import { Button, Typography, Box, Alert, IconButton } from "@mui/material";
 import { QRCodeCanvas } from "qrcode.react";
 import FileUploadIcon from "@mui/icons-material/FileUpload";
 import error_image from "../assets/error_image.png";
@@ -7,10 +8,11 @@ import { useRef } from "react";
 import Papa from 'papaparse';
 import { generatePDFBatch } from "../utils/generatePDFBatch";
 import QRCode from "qrcode";
+import DeleteIcon from '@mui/icons-material/Delete';
 
 
-const CSVPDFBatchGenerator = () => {
-    const [csvData, setCsvData] = useState(null);
+const CSVPDFBatchGenerator = ({ csvData, setCsvData }) => {
+
     const fileInputRef = useRef(null);
     const [download, setDownload] = useState(false);
 
@@ -40,6 +42,8 @@ const CSVPDFBatchGenerator = () => {
                                 lowercaseRow[formattedKey] = row[key];
                             });
 
+                            lowercaseRow.rowId = Math.random().toString(36).substr(2, 9); // Generate a random ID for each row
+
                             // Fetch image and add `imageFile` property if URL exists
                             try {
                                 if (lowercaseRow.url_de_img) {
@@ -57,7 +61,7 @@ const CSVPDFBatchGenerator = () => {
 
                             try {
                                 if (lowercaseRow.id) {
-                                    lowercaseRow.qrValue =`https://cursos29.infomatika.app/certificados/index.php?idp=${lowercaseRow.id}`
+                                    lowercaseRow.qrValue = `https://cursos29.infomatika.app/certificados/index.php?idp=${lowercaseRow.id}`
                                     lowercaseRow.qrImage = await generateQR(lowercaseRow.id);
                                 }
 
@@ -69,15 +73,15 @@ const CSVPDFBatchGenerator = () => {
                             if (!lowercaseRow.error.fecha_1) {
                                 const [day, month, year] = lowercaseRow.fecha_1.split('/');
                                 const date = new Date(`${year}-${month}-${day}`); // Ensures correct parsing
-                            
+
                                 const nextYear = new Date(date);
                                 nextYear.setFullYear(date.getUTCFullYear() + 1);
-                            
+
                                 // Formatting the date as DD/MM/YYYY
                                 const dayStr = String(nextYear.getUTCDate()).padStart(2, '0');
                                 const monthStr = String(nextYear.getUTCMonth() + 1).padStart(2, '0'); // Months are 0-based
                                 const yearStr = nextYear.getUTCFullYear();
-                            
+
                                 lowercaseRow.fecha_vencimiento = `${dayStr}/${monthStr}/${yearStr}`;
                             }
                             lowercaseRow.isValid = Object.keys(lowercaseRow.error).length === 0; // Check if the row is valid
@@ -103,8 +107,8 @@ const CSVPDFBatchGenerator = () => {
             width: 125,
             margin: 0,
             errorCorrectionLevel: 'L',  // 'L' gives the smallest margin
-          });
-        };
+        });
+    };
 
     const fetchImage = async (imageUrl) => {
         try {
@@ -191,7 +195,7 @@ const CSVPDFBatchGenerator = () => {
                         <Button sx={{ marginTop: '16px', marginBottom: '16px', marginLeft: '5px', marginRight: '5px' }}
                             variant="contained"
                             color="secondary"
-                            disabled={csvData?.some(row => !row.isValid)}
+                            disabled={csvData?.some(row => !row.isValid) || !csvData}
                             onClick={handleGeneratePDF}
 
                         >
@@ -201,62 +205,12 @@ const CSVPDFBatchGenerator = () => {
 
             </Box>
 
-            {csvData && [...csvData].sort((a, b) => a.isValid - b.isValid).map((alumno, index) => {
+            {csvData && [...csvData].sort((a, b) => a.isValid - b.isValid).map((alumno) => {
 
                 return (
 
+                    <PreviewCard alumno={alumno} key={alumno.rowId} />
 
-                    <Box key={index + alumno} sx={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        borderColor: 'success.main', p: 2, mt: 2, padding: '10px',
-                        margin: '5px',
-                        marginBottom: '0.5rem',
-                        borderRadius: '5px',
-                        backgroundColor: alumno.isValid ? '#c8e6c9' : '#ffcdd2', // Green for valid, Red for invalid
-                        border: alumno.isValid ? '1px solid #388e3c' : '1px solid #f44336', // Green border for valid, Red border for invalid
-                    }}>
-                        <Box sx={{ display: 'flex', flexDirection: 'row', justifyContent: "space-evenly", alignItems: "center" }}>
-                            <Box sx={{ display: 'flex', flexDirection: 'row', justifyContent: "space-evenly", alignItems: "center", gap: '0.85rem' }}>
-                                <Box>
-                                    <img
-                                        src={alumno.imageFile}
-                                        alt="Preview"
-                                        style={{
-                                            maxWidth: '125px',
-                                            maxHeight: '125px',
-                                            height: 'auto',
-                                            width: 'auto',
-                                        }}
-                                    />
-
-                                </Box>
-                                {alumno.qrValue && (
-                                    <Box >
-                                        <Box id="qr-code" display="flex" justifyContent="center">
-                                            <QRCodeCanvas value={alumno.qrValue} size={125} />
-                                        </Box>
-                                    </Box>
-                                )}
-
-                            </Box>
-
-                            <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: "space-evenly", alignItems: "flex-start", marginLeft: '20px' }}>
-                                <Typography variant="h6">{alumno.id}</Typography>
-                                <Typography variant="h6">{alumno.apellido + ", " + alumno.nombre}</Typography>
-                                <Typography variant="h6">{alumno.dni}</Typography>
-                                <Typography variant="h6">{alumno.fecha_1}</Typography>
-                            </Box>
-                        </Box>
-                        <Box>
-                            {alumno.error && Object.keys(alumno.error).map((key) => {
-                                return (
-                                    <Alert sx={{ marginTop: '.3rem' }} key={key} severity="error">{alumno.error[key]}.</Alert>
-                                )
-                            })}
-                        </Box>
-
-                    </Box>
                 )
             })}
 
@@ -265,4 +219,170 @@ const CSVPDFBatchGenerator = () => {
     )
 }
 
+const PreviewCard = ({ alumno }) => {
+
+    const [hovered, setHovered] = useState(false);
+    const [expanded, setExpanded] = useState(false);
+
+    const handleIconClick = (event) => {
+        event.stopPropagation(); // Prevent the parent onClick from being triggered
+        console.log('Icon clicked');
+    };
+    const errores = alumno.error ? Object.keys(alumno.error).length : 0;
+
+    
+    
+
+    return (
+
+        <Box sx={{
+
+            position: 'relative',
+            display: 'flex',
+            flexDirection: 'column',
+            borderColor: 'success.main', p: 2, mt: 2, padding: '10px',
+            margin: '5px',
+            marginBottom: '0.5rem',
+            borderRadius: '5px',
+            backgroundColor: alumno.isValid ? '#c8e6c9' : '#ffcdd2', // Green for valid, Red for invalid
+            border: alumno.isValid ? '1px solid #388e3c' : '1px solid #f44336', // Green border for valid, Red border for invalid
+            transition: 'height 0.6s ease',  // Smooth transition for height
+            height: expanded ? `${150 + errores * 53}px` : `${65 + errores * 53}px`,
+        }}
+            onClick={() => setExpanded(!expanded)}
+            onMouseEnter={() => setHovered(true)}
+            onMouseLeave={() => setHovered(false)}
+        >
+            <Box
+                sx={{
+                    position: 'absolute',  // Position this box absolutely in relation to its parent container
+                    top: 0,
+                    right: 0,
+                    opacity: hovered ? 1 : 0,  // Show the box when hovered
+                    transition: 'opacity 0.3s ease, visibility 0.3s ease',  // Smooth transition for visibility and opacity
+                }}
+                className="hover-box"
+            >
+                {/* Content of the box */}
+                <IconButton
+                    aria-label="delete"
+                    onClick={handleIconClick}  // Prevent the click from propagating to the parent
+                >
+                    <DeleteIcon />
+                </IconButton>
+            </Box>
+
+            <Box
+                sx={{
+                    display: 'flex',
+                    flexDirection: 'row',
+                    justifyContent: 'flex-start',
+                    alignItems: 'center',
+                    width: '100%',  // Ensure the outer box doesn't allow overflow
+                    overflow: 'hidden',  // Prevent overflow
+                }}
+            >
+                <Box sx={{
+                    display: 'flex',
+                    flexDirection: 'row',
+                    justifyContent: 'space-evenly',
+                    alignItems: 'center',
+                    gap: '0.85rem',
+                    maxWidth: '100%',
+                    transition: 'all 0.6s ease', // Ensure width and height transitions smoothly
+                }}>
+
+                    <Box>
+                        <img
+                            src={alumno.imageFile}
+                            alt="Preview"
+                            style={{
+                                transition: 'all 0.6s ease',  // Smooth transition for image size
+                                maxWidth: expanded ? '125px' : '50px',
+                                maxHeight: expanded ? '125px' : '50px',
+                                height: 'auto',
+                                width: 'auto',
+                            }}
+                        />
+                    </Box>
+
+                    {alumno.qrValue && (
+                        <Box
+                            id="qr-code"
+                            display="flex"
+                            justifyContent="center"
+                            sx={{
+                                position: expanded ? 'relative' : 'absolute',  // Position the QR code absolutely when expanded
+                                transform: expanded ? 'scale(1)' : 'scale(0.3)',
+                                opacity: expanded ? 1 : 0,
+                                visibility: expanded ? 'visible' : 'hidden',  // Keeps element in DOM but hides it
+                                transition: 'transform 0.5s ease, opacity 0.3s ease',  // Smooth transition effect
+                            }}
+                        >
+                            <QRCodeCanvas
+                                value={alumno.qrValue}
+                                size={125} // Keep a fixed size
+                            />
+                        </Box>
+                    )}
+                </Box>
+
+                <Box
+                    sx={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'flex-start',
+                        marginLeft: '20px',
+                        overflow: 'hidden',  // Prevents overflow in the entire box
+                    }}
+                >
+                    <Box sx={{ display: 'flex', flexDirection: expanded ? 'column' : 'row', transition: 'flex-direction 0.3s ease', columnGap: '0.5rem' }}>
+                        <Typography variant="h6" sx={{ fontSize: expanded ? '1.25rem' : '1.5rem' }} >{alumno.id}</Typography>
+                        <Typography sx={{ fontWeight: 'bold', fontSize: '1.5rem', display: expanded ? 'none' : 'flex' }}> - </Typography>
+                        <Typography
+                            sx={{
+
+                                textAlign: 'left',
+                                whiteSpace: 'nowrap',      // Prevents text from wrapping
+                                overflow: 'hidden',        // Hides the overflowed text
+                                textOverflow: 'ellipsis',  // Adds ellipsis when text overflows
+                                width: '100%',
+                                fontSize: expanded ? '1.25rem' : '1.5rem'           // Makes Typography take full width of its container
+                            }}
+                            variant="h6"
+                        >
+                            {alumno.apellido + ", " + alumno.nombre}
+                        </Typography>
+
+                    </Box>
+                    <Typography
+                        sx={{
+                            transition: 'opacity 0.3s ease, transform 1.5s ease',  // Smooth effect
+                            pointerEvents: expanded ? 'auto' : 'none',  // Prevents interaction when hidden
+                            position: expanded ? 'relative' : 'absolute',  // Position the QR code absolutely when expanded
+                            opacity: expanded ? 1 : 0,  // Hides when not expanded
+                        }}
+                        variant="h6"
+                    >
+                        {alumno.dni}
+                    </Typography>
+                    <Typography sx={{
+                        transition: 'opacity 0.3s ease, transform 1.5s ease',  // Smooth effect
+                        pointerEvents: expanded ? 'auto' : 'none',  // Prevents interaction when hidden
+                        position: expanded ? 'relative' : 'absolute',  // Position the QR code absolutely when expanded
+                        opacity: expanded ? 1 : 0,  // Hides when not expanded
+                    }} variant="h6">{alumno.fecha_1}</Typography>
+                </Box>
+            </Box>
+            <Box>
+                {alumno.error && Object.keys(alumno.error).map((key) => {
+                    return (
+                        <Alert sx={{ marginTop: '.3rem' }} key={key} severity="error">{alumno.error[key]}.</Alert>
+                    )
+                })}
+            </Box>
+
+        </Box>
+    )
+}
 export { CSVPDFBatchGenerator };

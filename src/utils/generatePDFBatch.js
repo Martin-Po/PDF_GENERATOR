@@ -27,12 +27,23 @@ export const generatePDFBatch = (csvData, download) => {
     pdf.addFont("Montserrat-Bold.ttf", "Montserrat", "bold");
 
 
+    let y_correction = 0;
     csvData.map((alumno, index) => {
+        
         const cardHeight = 5.4;
         const cardWidth = 8.26;
-        const position = { x: 2.25 + (index === 1 ? 1 : index%2)*cardWidth, y: 1.2 + cardHeight*Math.floor(index/2) };
+        if(index % 10 === 0 && index !== 0) 
+            {
+                y_correction = cardHeight*5 * index/10
+            }
+    
         
+       
+        const position = { x: 2.25 + (index === 1 ? 1 : index%2)*cardWidth, y: 1.2 + cardHeight*Math.floor(index/2) - y_correction };
         
+        if (index % 10 === 0 && index !== 0) {        
+            pdf.addPage();
+        }
 
         pdf.setLineWidth(0.035); // Makes the border thinner
 

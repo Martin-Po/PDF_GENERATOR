@@ -1,3 +1,4 @@
+/* eslint-disable react/prop-types */
 import { useEffect, useState } from "react";
 import { TextField, Button, Typography, Box, IconButton } from "@mui/material";
 import { QRCodeCanvas } from "qrcode.react";
@@ -7,17 +8,8 @@ import { useRef } from "react";
 import { generatePDF } from "../utils/generatePDF";
 
 
-const SinglePDFGenerator = () => {
-  const [formData, setFormData] = useState({
-    id_usuario: "",
-    nombre: "",
-    apellido: "",
-    dni: "",
-    fecha_emision: "",
-    fecha_vencimiento: "",
-    imageUrl: "", // Store image URL
-    imageFile: null, // Store selected file
-  });
+const SinglePDFGenerator = ({formData, setFormData}) => {
+
 
   const [qrValue, setQrValue] = useState("");
   const fileInputRef = useRef(null);

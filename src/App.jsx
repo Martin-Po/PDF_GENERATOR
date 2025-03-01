@@ -12,6 +12,18 @@ function App() {
     setSelectedTab(newValue);
   };
 
+  const [csvData, setCsvData] = useState(null);
+    const [formData, setFormData] = useState({
+      id_usuario: "",
+      nombre: "",
+      apellido: "",
+      dni: "",
+      fecha_emision: "",
+      fecha_vencimiento: "",
+      imageUrl: "", // Store image URL
+      imageFile: null, // Store selected file
+    });
+  
 
 
 
@@ -24,7 +36,7 @@ function App() {
           <Tab label="CSV"   />
         </Tabs>
       </Box>
-        {selectedTab === 0 ? <SinglePDFGenerator/> : <CSVPDFBatchGenerator/>}
+        {selectedTab === 0 ? <SinglePDFGenerator formData = {formData} setFormData ={setFormData}/> : <CSVPDFBatchGenerator csvData={csvData} setCsvData={setCsvData}  />}
       </Paper>
     </Container>
   );
