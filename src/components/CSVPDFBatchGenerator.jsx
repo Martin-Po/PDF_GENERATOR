@@ -1,6 +1,6 @@
 /* eslint-disable react/prop-types */
-import { useState } from "react";
-import { Button, Typography, Box, Alert, IconButton } from "@mui/material";
+import { useEffect, useState } from "react";
+import { Button, Typography, Box, Alert, IconButton, TextField, Paper, Container } from "@mui/material";
 import { QRCodeCanvas } from "qrcode.react";
 import FileUploadIcon from "@mui/icons-material/FileUpload";
 import error_image from "../assets/error_image.png";
@@ -9,6 +9,9 @@ import Papa from 'papaparse';
 import { generatePDFBatch } from "../utils/generatePDFBatch";
 import QRCode from "qrcode";
 import DeleteIcon from '@mui/icons-material/Delete';
+import Modal from '@mui/material/Modal';
+import EditIcon from '@mui/icons-material/Edit';
+import dayjs from "dayjs";
 
 
 const CSVPDFBatchGenerator = ({ csvData, setCsvData }) => {
@@ -18,6 +21,17 @@ const CSVPDFBatchGenerator = ({ csvData, setCsvData }) => {
 
 
 
+    const removeAlumno = (rowId) => {
+        setCsvData((prevAlumnos) => prevAlumnos.filter(alumno => alumno.rowId !== rowId));
+    };
+
+    const updateAlumno = (rowId, updatedAlumno) => {
+        setCsvData((prevAlumnos) =>
+            prevAlumnos.map(alumno =>
+                alumno.rowId === rowId ? { ...alumno, ...updatedAlumno } : alumno
+            )
+        );
+    };
 
     const handleFileUpload = (event) => {
         console.log("Uploading file...");
@@ -137,6 +151,8 @@ const CSVPDFBatchGenerator = ({ csvData, setCsvData }) => {
 
     const validateRow = (row) => {
         let newErrors = {};
+        console.log("row", row);
+        
 
         if (!row.id) newErrors.id = "ID Usuario es requerido";
         if (!row.nombre) newErrors.nombre = "Nombre es requerido";
@@ -156,6 +172,8 @@ const CSVPDFBatchGenerator = ({ csvData, setCsvData }) => {
             }
         }
         if (!row.url_de_img) newErrors.url_de_img = "Imagen es requerida";
+        console.log("newErrors", newErrors);
+        
 
         return newErrors;
     };
@@ -209,7 +227,7 @@ const CSVPDFBatchGenerator = ({ csvData, setCsvData }) => {
 
                 return (
 
-                    <PreviewCard alumno={alumno} key={alumno.rowId} />
+                    <PreviewCard alumno={alumno} key={alumno.rowId} removeAlumno={removeAlumno} updateAlumno={updateAlumno} validateRow={validateRow} />
 
                 )
             })}
@@ -219,19 +237,34 @@ const CSVPDFBatchGenerator = ({ csvData, setCsvData }) => {
     )
 }
 
-const PreviewCard = ({ alumno }) => {
+const PreviewCard = ({ alumno, removeAlumno, updateAlumno, validateRow }) => {
 
     const [hovered, setHovered] = useState(false);
     const [expanded, setExpanded] = useState(false);
 
-    const handleIconClick = (event) => {
-        event.stopPropagation(); // Prevent the parent onClick from being triggered
-        console.log('Icon clicked');
+    const [open, setOpen] = useState(false);
+    const handleOpen = () => setOpen(true);
+    const handleClose = (event) => {
+        event.stopPropagation(); // Prevents bubbling up
+        setOpen(false); // Close modal
     };
+
+    const handleDeleteIconClick = (event) => {
+        event.stopPropagation(); // Prevent the parent onClick from being triggered
+        removeAlumno(alumno.rowId);
+    };
+
+    const handleEditIconClick = (event) => {
+        event.stopPropagation(); // Prevent the parent onClick from being triggered
+        handleOpen()
+    };
+
     const errores = alumno.error ? Object.keys(alumno.error).length : 0;
 
-    
-    
+    const ref = useRef(null);
+
+
+
 
     return (
 
@@ -253,6 +286,8 @@ const PreviewCard = ({ alumno }) => {
             onMouseEnter={() => setHovered(true)}
             onMouseLeave={() => setHovered(false)}
         >
+            <EditModal alumno={alumno} updateAlumno={updateAlumno} open={open} handleClose={handleClose} handleOpen={handleOpen} validateRow={validateRow} />
+
             <Box
                 sx={{
                     position: 'absolute',  // Position this box absolutely in relation to its parent container
@@ -266,13 +301,19 @@ const PreviewCard = ({ alumno }) => {
                 {/* Content of the box */}
                 <IconButton
                     aria-label="delete"
-                    onClick={handleIconClick}  // Prevent the click from propagating to the parent
+                    onClick={handleEditIconClick}>
+                    <EditIcon />
+                </IconButton>
+                <IconButton
+                    aria-label="delete"
+                    onClick={handleDeleteIconClick}  // Prevent the click from propagating to the parent
                 >
                     <DeleteIcon />
                 </IconButton>
             </Box>
 
             <Box
+                ref={ref}
                 sx={{
                     display: 'flex',
                     flexDirection: 'row',
@@ -336,7 +377,7 @@ const PreviewCard = ({ alumno }) => {
                         overflow: 'hidden',  // Prevents overflow in the entire box
                     }}
                 >
-                    <Box sx={{ display: 'flex', flexDirection: expanded ? 'column' : 'row', transition: 'flex-direction 0.3s ease', columnGap: '0.5rem' }}>
+                    <Box sx={{ display: 'flex', flexDirection: expanded ? 'column' : 'row', transition: 'flex-direction 0.3s ease', columnGap: '0.5rem', alignItems: 'flex-start' }}>
                         <Typography variant="h6" sx={{ fontSize: expanded ? '1.25rem' : '1.5rem' }} >{alumno.id}</Typography>
                         <Typography sx={{ fontWeight: 'bold', fontSize: '1.5rem', display: expanded ? 'none' : 'flex' }}> - </Typography>
                         <Typography
@@ -385,4 +426,281 @@ const PreviewCard = ({ alumno }) => {
         </Box>
     )
 }
+
+const EditModal = ({ alumno, updateAlumno, open, handleClose, validateRow }) => {
+
+    const [errors, setErrors] = useState({});
+
+    let auxFechaEmision = ""
+    let auxFechaVencimiento = ""
+
+
+
+    if (alumno.fecha_1?.split('/').length === 3) {
+        let [day, month, year] = alumno.fecha_1.split('/');
+        auxFechaEmision = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+
+        if (alumno.fecha_vencimiento?.split('/').length === 3) {
+
+            [day, month, year] = alumno.fecha_vencimiento.split('/');
+            auxFechaVencimiento = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+        }
+
+    }
+
+
+    const [updatedAlumno, setUpdatedAlumno] = useState({
+        id: alumno.id,
+        nombre: alumno.nombre,
+        apellido: alumno.apellido,
+        dni: alumno.dni,
+        auxFechaEmision: auxFechaEmision,
+        auxFechaVencimiento: auxFechaVencimiento,
+        fecha_1: alumno.fecha_1,
+        fecha_vencimiento: alumno.fecha_vencimiento,
+        imageUrl: alumno.url_de_img, // Store image URL
+        imageFile: alumno.imageFile, // Store selected file
+    });
+
+
+
+
+    const handleUpdateFormChange = (e) => {
+
+        const { name, value } = e.target;
+        let updatedErrors = {}
+        console.log("name", name);
+        
+
+        if (name === "fecha_emision") {
+            console.log("If fecha_emision");
+            
+            
+            let [year, month, day] = value.split("-")
+            const updatedFechaEmision = `${day}/${month}/${year}`
+            console.log("Fecha enviada " + `${day}/${month}/${year}`);
+            
+            
+            updatedErrors.error = validateRow({ ...alumno, fecha_1: updatedFechaEmision });
+        }
+        else if (name === "fecha_vencimiento") {
+            console.log("If fecha_vencimiento");
+            
+            let [year, month, day] = value.split("-")
+            const updatedFechaVencimiento = `${day}/${month}/${year}`
+            updatedErrors.error = validateRow({ ...alumno,fecha_vencimiento: updatedFechaVencimiento });
+        }
+        else {
+            console.log("Else");
+            
+            updatedErrors.error = validateRow({ ...alumno, [name]: value });
+        }
+                
+        updatedErrors.isValid = Object.keys(updatedErrors.error).length === 0; // Check if the row is valid        
+        
+        switch (name) {
+            case "id":
+                if (!/^\d*$/.test(value)) return;
+                break;
+
+            case "nombre":
+                break;
+
+            case "apellido":
+                break;
+
+            case "dni":
+                break;
+
+            case "fecha_emision": {
+                console.log("value", value);
+                
+                const date = new Date(value);
+                if (isNaN(date.getTime())) return;
+
+                let [year, month, day] = value.split("-")
+                const updatedFechaEmision = `${day}/${month}/${year}`
+
+                const nextYear = new Date(date);
+                nextYear.toISOString().split("T")[0]
+                nextYear.setFullYear(date.getFullYear() + 1);
+                let [year_2, month_2, day_2] = nextYear.toISOString().split("T")[0].split("-")
+                const updatedFechaVencimiento = `${day_2}/${month_2}/${year_2}`
+                console.log("updatedFechaEmision", updatedFechaEmision);
+
+                console.log("auxFechaEmision"+ value + 
+                    " fecha_1" + updatedFechaEmision +
+                    " fecha_vencimiento " + updatedFechaVencimiento,
+                    " auxFechaVencimiento " +  nextYear.toISOString().split("T")[0].split("-"),
+                    " error " + updatedErrors.error,
+                    " isValid " +  updatedErrors.isValid);
+                
+                    console.log("Antes de setear", updatedErrors.error);
+                
+
+                setUpdatedAlumno((prev) => ({
+                    ...prev,
+                    auxFechaEmision: value,
+                    fecha_1: updatedFechaEmision,
+                    fecha_vencimiento: updatedFechaVencimiento,
+                    auxFechaVencimiento: nextYear.toISOString().split("T")[0],
+                    error: updatedErrors.error,
+                    isValid: updatedErrors.isValid
+                }));
+                return;
+            }
+
+            case "fecha_vencimiento": {
+                const date = new Date(value);
+                if (isNaN(date.getTime())) return;
+
+                let [year, month, day] = value.split("-")
+                const updatedFechaVencimiento = `${day}/${month}/${year}`
+
+
+                
+                setUpdatedAlumno((prev) => ({
+                    ...prev,
+                    fecha_vencimiento: updatedFechaVencimiento,
+                    auxFechaVencimiento: value,
+                    error: updatedErrors.error,
+                    isValid: updatedErrors.isValid
+                }));
+                return;
+            }
+
+            case "imageUrl":
+                // Trigger image URL change in the state
+                setUpdatedAlumno((prev) => ({ ...prev, imageUrl: value }));
+                break;
+
+            default:
+                break;
+        }
+
+        
+
+        setUpdatedAlumno((prev) => ({
+            ...prev,
+            [name]: value,
+            error: updatedErrors.error,
+            isValid: updatedErrors.isValid
+        }));
+
+      
+    };
+
+    const handleUpdateAlumno = () => {
+        updateAlumno(alumno.rowId, updatedAlumno);
+        handleClose;
+    }
+
+
+
+    return (
+        <Modal
+            open={open}
+            onClose={handleClose}
+            aria-labelledby="modal-modal-title"
+            aria-describedby="modal-modal-description"
+        >
+            <Container maxWidth="sm">
+                <Paper onClick={(e) => e.stopPropagation()} elevation={3} sx={{ p: 4, mt: 4, textAlign: "center" }}>
+
+                    <TextField
+                        fullWidth
+                        label="id"
+                        name="id"
+                        value={updatedAlumno.id}
+                        onChange={handleUpdateFormChange}
+                        margin="normal"
+                        error={!!errors.id_usuario}
+                        helperText={errors.id_usuario}
+                    />
+                    <TextField
+                        fullWidth
+                        label="Nombre"
+                        name="nombre"
+                        value={updatedAlumno.nombre}
+                        onChange={handleUpdateFormChange}
+                        margin="normal"
+                        error={!!errors.nombre}
+                        helperText={errors.nombre}
+                    />
+                    <TextField
+                        fullWidth
+                        label="Apellido"
+                        name="apellido"
+                        value={updatedAlumno.apellido}
+                        onChange={handleUpdateFormChange}
+                        margin="normal"
+                        error={!!errors.apellido}
+                        helperText={errors.apellido}
+                    />
+                    <TextField
+                        fullWidth
+                        label="DNI"
+                        name="dni"
+                        value={updatedAlumno.dni}
+                        onChange={handleUpdateFormChange}
+                        margin="normal"
+                        error={!!errors.dni}
+                        helperText={errors.dni}
+                    />
+
+                    <Box sx={{ display: "flex", justifyContent: "space-between", gap: 2 }}>
+                        <TextField
+                            fullWidth
+                            InputLabelProps={{ shrink: true }}
+                            label="Fecha Emisión"
+                            name="fecha_emision"
+                            type="date"
+                            value={updatedAlumno.auxFechaEmision}
+                            onChange={handleUpdateFormChange}
+                            margin="normal"
+                            error={!!errors.fecha_emision}
+                            helperText={errors.fecha_emision}
+                        />
+                        <TextField
+                            fullWidth
+                            InputLabelProps={{ shrink: true }}
+                            label="Fecha Vencimiento"
+                            name="fecha_vencimiento"
+                            type="date"
+                            value={updatedAlumno.auxFechaVencimiento}
+                            onChange={handleUpdateFormChange}
+                            margin="normal"
+                            error={!!errors.fecha_vencimiento}
+                            helperText={errors.fecha_vencimiento}
+                        />
+                    </Box>
+
+
+
+
+                    <Box mt={2} display="flex" justifyContent="space-between">
+                        <Button variant="contained" color="primary" onClick={handleClose}>
+                            CANCELAR
+                        </Button>
+                        {
+                            <Button
+                                variant="contained"
+                                color="success"
+                                onClick={handleUpdateAlumno}
+                            >
+                                ACEPTAR
+                            </Button>
+
+                        }
+
+                    </Box>
+                </Paper>
+            </Container>
+
+        </Modal>
+    )
+
+}
+
+
 export { CSVPDFBatchGenerator };

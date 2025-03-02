@@ -1,4 +1,4 @@
-import {  Box, Container, Paper, Tab, Tabs, Typography,  } from "@mui/material";
+import {  Box, Container, Paper, Tab, Tabs, } from "@mui/material";
 import { SinglePDFGenerator } from "./components/SinglePDFGenerator.jsx";
 import { CSVPDFBatchGenerator } from "./components/CSVPDFBatchGenerator.jsx";
 import { useState } from "react";
