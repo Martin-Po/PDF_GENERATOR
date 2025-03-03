@@ -1,6 +1,6 @@
 /* eslint-disable react/prop-types */
 import { useEffect, useState } from "react";
-import { Button, Typography, Box, Alert, IconButton, TextField, Paper, Container } from "@mui/material";
+import { Button, Typography, Box, Alert, IconButton, TextField, Paper, Container, CircularProgress } from "@mui/material";
 import { QRCodeCanvas } from "qrcode.react";
 import FileUploadIcon from "@mui/icons-material/FileUpload";
 import error_image from "../assets/error_image.png";
@@ -11,13 +11,14 @@ import QRCode from "qrcode";
 import DeleteIcon from '@mui/icons-material/Delete';
 import Modal from '@mui/material/Modal';
 import EditIcon from '@mui/icons-material/Edit';
-import dayjs from "dayjs";
 
 
 const CSVPDFBatchGenerator = ({ csvData, setCsvData }) => {
 
     const fileInputRef = useRef(null);
     const [download, setDownload] = useState(false);
+    const [loading, setLoading] = useState(false);
+
 
 
 
@@ -26,6 +27,7 @@ const CSVPDFBatchGenerator = ({ csvData, setCsvData }) => {
     };
 
     const updateAlumno = (rowId, updatedAlumno) => {
+        setDownload(false); // Reset download state
         setCsvData((prevAlumnos) =>
             prevAlumnos.map(alumno =>
                 alumno.rowId === rowId ? { ...alumno, ...updatedAlumno } : alumno
@@ -35,83 +37,93 @@ const CSVPDFBatchGenerator = ({ csvData, setCsvData }) => {
 
     const handleFileUpload = (event) => {
         console.log("Uploading file...");
+        setLoading(true);
+        setCsvData(null); // Reset CSV data
 
-        const file = event.target.files[0];
-        if (!file) return;
+        try {
+            const file = event.target.files[0];
+            if (!file) return;
 
-        setDownload(false); // Reset download state
-        // Reset input to allow re-uploading the same file
-        event.target.value = null;
+            setDownload(false); // Reset download state
+            // Reset input to allow re-uploading the same file
+            event.target.value = null;
 
-        if (file.type === "text/csv") {
-            Papa.parse(file, {
-                complete: async (result) => {
-                    // Process headers and convert them to lowercase
-                    const data = await Promise.all(
-                        result.data.map(async (row) => {
-                            const lowercaseRow = {};
+            if (file.type === "text/csv") {
+                Papa.parse(file, {
+                    complete: async (result) => {
+                        // Process headers and convert them to lowercase
+                        const data = await Promise.all(
+                            result.data.map(async (row) => {
+                                const lowercaseRow = {};
 
-                            Object.keys(row).forEach((key) => {
-                                const formattedKey = key.toLowerCase().replace(/\s+/g, "_"); // Lowercase & replace spaces
-                                lowercaseRow[formattedKey] = row[key];
-                            });
+                                Object.keys(row).forEach((key) => {
+                                    const formattedKey = key.toLowerCase().replace(/\s+/g, "_"); // Lowercase & replace spaces
+                                    lowercaseRow[formattedKey] = row[key];
+                                });
 
-                            lowercaseRow.rowId = Math.random().toString(36).substr(2, 9); // Generate a random ID for each row
+                                lowercaseRow.rowId = Math.random().toString(36).substr(2, 9); // Generate a random ID for each row
 
-                            // Fetch image and add `imageFile` property if URL exists
-                            try {
-                                if (lowercaseRow.url_de_img) {
-                                    lowercaseRow.imageFile = await fetchImage(lowercaseRow.url_de_img);
-                                } else {
+                                // Fetch image and add `imageFile` property if URL exists
+                                try {
+                                    if (lowercaseRow.url_de_img) {
+                                        lowercaseRow.imageFile = await fetchImage(lowercaseRow.url_de_img);
+                                    } else {
+                                        lowercaseRow.imageFile = error_image;
+                                    }
+
+                                } catch (error) {
+                                    console.log(error);
+
+                                    // If fetchImage fails (throws an error), use the fallback image
                                     lowercaseRow.imageFile = error_image;
                                 }
 
-                            } catch (error) {
-                                console.log(error);
+                                try {
+                                    if (lowercaseRow.id) {
+                                        lowercaseRow.qrValue = `https://cursos29.infomatika.app/certificados/index.php?idp=${lowercaseRow.id}`
+                                        lowercaseRow.qrImage = await generateQR(lowercaseRow.id);
+                                    }
 
-                                // If fetchImage fails (throws an error), use the fallback image
-                                lowercaseRow.imageFile = error_image;
-                            }
-
-                            try {
-                                if (lowercaseRow.id) {
-                                    lowercaseRow.qrValue = `https://cursos29.infomatika.app/certificados/index.php?idp=${lowercaseRow.id}`
-                                    lowercaseRow.qrImage = await generateQR(lowercaseRow.id);
+                                } catch (error) {
+                                    console.log(error);
                                 }
 
-                            } catch (error) {
-                                console.log(error);
-                            }
+                                lowercaseRow.error = validateRow(lowercaseRow); // Validate the row
+                                if (!lowercaseRow.error.fecha_1) {
+                                    const [day, month, year] = lowercaseRow.fecha_1.split('/');
+                                    const date = new Date(`${year}-${month}-${day}`); // Ensures correct parsing
 
-                            lowercaseRow.error = validateRow(lowercaseRow); // Validate the row
-                            if (!lowercaseRow.error.fecha_1) {
-                                const [day, month, year] = lowercaseRow.fecha_1.split('/');
-                                const date = new Date(`${year}-${month}-${day}`); // Ensures correct parsing
+                                    const nextYear = new Date(date);
+                                    nextYear.setFullYear(date.getUTCFullYear() + 1);
 
-                                const nextYear = new Date(date);
-                                nextYear.setFullYear(date.getUTCFullYear() + 1);
+                                    // Formatting the date as DD/MM/YYYY
+                                    const dayStr = String(nextYear.getUTCDate()).padStart(2, '0');
+                                    const monthStr = String(nextYear.getUTCMonth() + 1).padStart(2, '0'); // Months are 0-based
+                                    const yearStr = nextYear.getUTCFullYear();
 
-                                // Formatting the date as DD/MM/YYYY
-                                const dayStr = String(nextYear.getUTCDate()).padStart(2, '0');
-                                const monthStr = String(nextYear.getUTCMonth() + 1).padStart(2, '0'); // Months are 0-based
-                                const yearStr = nextYear.getUTCFullYear();
+                                    lowercaseRow.fecha_vencimiento = `${dayStr}/${monthStr}/${yearStr}`;
+                                }
+                                lowercaseRow.isValid = Object.keys(lowercaseRow.error).length === 0; // Check if the row is valid
 
-                                lowercaseRow.fecha_vencimiento = `${dayStr}/${monthStr}/${yearStr}`;
-                            }
-                            lowercaseRow.isValid = Object.keys(lowercaseRow.error).length === 0; // Check if the row is valid
+                                return lowercaseRow;
+                            })
+                        );
 
-                            return lowercaseRow;
-                        })
-                    );
-
-                    console.log("Parsed CSV with Images:", data);
-                    setCsvData(data); // Save processed data with images into state
-                },
-                header: true, // If your CSV has headers
-                skipEmptyLines: true, // Skip empty lines
-            });
-        } else {
-            alert("Please upload a valid CSV file");
+                        console.log("Parsed CSV with Images:", data);
+                        setCsvData(data); // Save processed data with images into state
+                    },
+                    header: true, // If your CSV has headers
+                    skipEmptyLines: true, // Skip empty lines
+                });
+            } else {
+                alert("Please upload a valid CSV file");
+            }
+        }
+        catch (error) {
+            console.error("Error uploading file:", error);
+        }
+        finally {
+            setLoading(false);
         }
     };
 
@@ -152,7 +164,7 @@ const CSVPDFBatchGenerator = ({ csvData, setCsvData }) => {
     const validateRow = (row) => {
         let newErrors = {};
         console.log("row", row);
-        
+
 
         if (!row.id) newErrors.id = "ID Usuario es requerido";
         if (!row.nombre) newErrors.nombre = "Nombre es requerido";
@@ -171,16 +183,17 @@ const CSVPDFBatchGenerator = ({ csvData, setCsvData }) => {
                 newErrors.fecha_1 = "Fecha no válida";
             }
         }
+        if (row.imageFile === error_image) newErrors.url_de_img = "Error al cargar la imagen";
         if (!row.url_de_img) newErrors.url_de_img = "Imagen es requerida";
         console.log("newErrors", newErrors);
-        
+
 
         return newErrors;
     };
 
     const handleGeneratePDF = async () => {
         if (generatePDFBatch(csvData, download)) {
-            // setDownload(true);
+            setDownload(true);
         }
     };
 
@@ -189,16 +202,30 @@ const CSVPDFBatchGenerator = ({ csvData, setCsvData }) => {
     return (
         <Box>
             <Box sx={{ display: 'flex', flexDirection: 'row', justifyContent: "space-between" }}>
-                <Button sx={{ marginTop: '16px', marginBottom: '16px', marginLeft: '5px', marginRight: '5px' }} variant="contained" color="primary" startIcon={<FileUploadIcon />} onClick={() => fileInputRef.current.click()} >
-                    <input
-                        type="file"
-                        accept=".csv"
-                        ref={fileInputRef}
-                        onChange={handleFileUpload}
-                        style={{ display: "none" }} // Hide the input
-                    />
-                    SUBIR CSV
-                </Button>
+                <Box sx={{ position: 'relative' }}>
+                    <Button disabled={loading} sx={{ marginTop: '16px', marginBottom: '16px', marginLeft: '5px', marginRight: '5px' }} variant="contained" color="primary" startIcon={<FileUploadIcon />} onClick={() => fileInputRef.current.click()} >
+                        <input
+                            type="file"
+                            accept=".csv"
+                            ref={fileInputRef}
+                            onChange={handleFileUpload}
+                            style={{ display: "none" }} // Hide the input
+                        />
+                        SUBIR CSV
+                    </Button>
+                    {loading && <CircularProgress
+                        size={24}
+                        sx={{
+                            color: "green",
+                            position: 'absolute',
+                            top: '50%',
+                            left: '50%',
+                            marginTop: '-12px',
+                            marginLeft: '-12px',
+                        }}
+                    />}
+
+                </Box>
                 {
                     download ?
                         <Button sx={{ marginTop: '16px', marginBottom: '16px', marginLeft: '5px', marginRight: '5px' }}
@@ -227,17 +254,16 @@ const CSVPDFBatchGenerator = ({ csvData, setCsvData }) => {
 
                 return (
 
-                    <PreviewCard alumno={alumno} key={alumno.rowId} removeAlumno={removeAlumno} updateAlumno={updateAlumno} validateRow={validateRow} />
+                    <PreviewCard alumno={alumno} key={alumno.rowId} removeAlumno={removeAlumno} updateAlumno={updateAlumno} validateRow={validateRow} generateQR={generateQR} setDownload={setDownload} />
 
                 )
             })}
 
-            <pre>{JSON.stringify(csvData, null, 2)}</pre>
         </Box>
     )
 }
 
-const PreviewCard = ({ alumno, removeAlumno, updateAlumno, validateRow }) => {
+const PreviewCard = ({ alumno, removeAlumno, updateAlumno, validateRow, generateQR }) => {
 
     const [hovered, setHovered] = useState(false);
     const [expanded, setExpanded] = useState(false);
@@ -247,6 +273,8 @@ const PreviewCard = ({ alumno, removeAlumno, updateAlumno, validateRow }) => {
     const handleClose = (event) => {
         event.stopPropagation(); // Prevents bubbling up
         setOpen(false); // Close modal
+        setHovered(false);
+
     };
 
     const handleDeleteIconClick = (event) => {
@@ -286,7 +314,7 @@ const PreviewCard = ({ alumno, removeAlumno, updateAlumno, validateRow }) => {
             onMouseEnter={() => setHovered(true)}
             onMouseLeave={() => setHovered(false)}
         >
-            <EditModal alumno={alumno} updateAlumno={updateAlumno} open={open} handleClose={handleClose} handleOpen={handleOpen} validateRow={validateRow} />
+            <EditModal alumno={alumno} updateAlumno={updateAlumno} open={open} handleClose={handleClose} handleOpen={handleOpen} validateRow={validateRow} setOpen={setOpen} generateQR={generateQR} setHovered={setHovered}></EditModal>
 
             <Box
                 sx={{
@@ -427,14 +455,11 @@ const PreviewCard = ({ alumno, removeAlumno, updateAlumno, validateRow }) => {
     )
 }
 
-const EditModal = ({ alumno, updateAlumno, open, handleClose, validateRow }) => {
+const EditModal = ({ alumno, updateAlumno, open, handleClose, validateRow, setOpen, generateQR, setHovered }) => {
 
-    const [errors, setErrors] = useState({});
 
     let auxFechaEmision = ""
     let auxFechaVencimiento = ""
-
-
 
     if (alumno.fecha_1?.split('/').length === 3) {
         let [day, month, year] = alumno.fecha_1.split('/');
@@ -445,9 +470,9 @@ const EditModal = ({ alumno, updateAlumno, open, handleClose, validateRow }) => 
             [day, month, year] = alumno.fecha_vencimiento.split('/');
             auxFechaVencimiento = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
         }
-
     }
 
+    const [changed, setChanged] = useState(false);
 
     const [updatedAlumno, setUpdatedAlumno] = useState({
         id: alumno.id,
@@ -463,45 +488,74 @@ const EditModal = ({ alumno, updateAlumno, open, handleClose, validateRow }) => 
     });
 
 
+    useEffect(() => {
+        setUpdatedAlumno({
+            id: alumno.id,
+            nombre: alumno.nombre,
+            apellido: alumno.apellido,
+            dni: alumno.dni,
+            auxFechaEmision: auxFechaEmision,
+            auxFechaVencimiento: auxFechaVencimiento,
+            fecha_1: alumno.fecha_1,
+            fecha_vencimiento: alumno.fecha_vencimiento,
+            imageUrl: alumno.url_de_img, // Store image URL
+            imageFile: alumno.imageFile, // Store selected file
+        });
+        setChanged(false);
+    }, [open]);  // Dependency array: Runs when `open` changes
 
 
-    const handleUpdateFormChange = (e) => {
+    const handleUpdateFormChange = async (e) => {
 
         const { name, value } = e.target;
         let updatedErrors = {}
         console.log("name", name);
+
+        setChanged(true);
         
 
         if (name === "fecha_emision") {
             console.log("If fecha_emision");
-            
-            
+
+
             let [year, month, day] = value.split("-")
             const updatedFechaEmision = `${day}/${month}/${year}`
             console.log("Fecha enviada " + `${day}/${month}/${year}`);
-            
-            
+
+
             updatedErrors.error = validateRow({ ...alumno, fecha_1: updatedFechaEmision });
         }
         else if (name === "fecha_vencimiento") {
             console.log("If fecha_vencimiento");
-            
+
             let [year, month, day] = value.split("-")
             const updatedFechaVencimiento = `${day}/${month}/${year}`
-            updatedErrors.error = validateRow({ ...alumno,fecha_vencimiento: updatedFechaVencimiento });
+            updatedErrors.error = validateRow({ ...alumno, fecha_vencimiento: updatedFechaVencimiento });
         }
         else {
             console.log("Else");
-            
+
             updatedErrors.error = validateRow({ ...alumno, [name]: value });
         }
-                
+
         updatedErrors.isValid = Object.keys(updatedErrors.error).length === 0; // Check if the row is valid        
-        
+
         switch (name) {
             case "id":
-                if (!/^\d*$/.test(value)) return;
-                break;
+                {
+                    if (!/^\d*$/.test(value)) return;
+                    const qrValue = `https://cursos29.infomatika.app/certificados/index.php?idp=${value}`
+                    const qrImage = await generateQR(value);
+                    setUpdatedAlumno((prev) => ({
+                        ...prev,
+                        id: value,
+                        qrValue: qrValue,
+                        qrImage: qrImage,
+                        error: updatedErrors.error,
+                        isValid: updatedErrors.isValid
+                    }));
+                    return;
+                }
 
             case "nombre":
                 break;
@@ -514,7 +568,7 @@ const EditModal = ({ alumno, updateAlumno, open, handleClose, validateRow }) => 
 
             case "fecha_emision": {
                 console.log("value", value);
-                
+
                 const date = new Date(value);
                 if (isNaN(date.getTime())) return;
 
@@ -526,17 +580,6 @@ const EditModal = ({ alumno, updateAlumno, open, handleClose, validateRow }) => 
                 nextYear.setFullYear(date.getFullYear() + 1);
                 let [year_2, month_2, day_2] = nextYear.toISOString().split("T")[0].split("-")
                 const updatedFechaVencimiento = `${day_2}/${month_2}/${year_2}`
-                console.log("updatedFechaEmision", updatedFechaEmision);
-
-                console.log("auxFechaEmision"+ value + 
-                    " fecha_1" + updatedFechaEmision +
-                    " fecha_vencimiento " + updatedFechaVencimiento,
-                    " auxFechaVencimiento " +  nextYear.toISOString().split("T")[0].split("-"),
-                    " error " + updatedErrors.error,
-                    " isValid " +  updatedErrors.isValid);
-                
-                    console.log("Antes de setear", updatedErrors.error);
-                
 
                 setUpdatedAlumno((prev) => ({
                     ...prev,
@@ -558,7 +601,7 @@ const EditModal = ({ alumno, updateAlumno, open, handleClose, validateRow }) => 
                 const updatedFechaVencimiento = `${day}/${month}/${year}`
 
 
-                
+
                 setUpdatedAlumno((prev) => ({
                     ...prev,
                     fecha_vencimiento: updatedFechaVencimiento,
@@ -578,7 +621,7 @@ const EditModal = ({ alumno, updateAlumno, open, handleClose, validateRow }) => 
                 break;
         }
 
-        
+
 
         setUpdatedAlumno((prev) => ({
             ...prev,
@@ -587,14 +630,15 @@ const EditModal = ({ alumno, updateAlumno, open, handleClose, validateRow }) => 
             isValid: updatedErrors.isValid
         }));
 
-      
+
     };
 
     const handleUpdateAlumno = () => {
         updateAlumno(alumno.rowId, updatedAlumno);
-        handleClose;
-    }
+        setOpen(false);
+        setHovered(false);
 
+    }
 
 
     return (
@@ -614,8 +658,6 @@ const EditModal = ({ alumno, updateAlumno, open, handleClose, validateRow }) => 
                         value={updatedAlumno.id}
                         onChange={handleUpdateFormChange}
                         margin="normal"
-                        error={!!errors.id_usuario}
-                        helperText={errors.id_usuario}
                     />
                     <TextField
                         fullWidth
@@ -624,8 +666,6 @@ const EditModal = ({ alumno, updateAlumno, open, handleClose, validateRow }) => 
                         value={updatedAlumno.nombre}
                         onChange={handleUpdateFormChange}
                         margin="normal"
-                        error={!!errors.nombre}
-                        helperText={errors.nombre}
                     />
                     <TextField
                         fullWidth
@@ -634,8 +674,6 @@ const EditModal = ({ alumno, updateAlumno, open, handleClose, validateRow }) => 
                         value={updatedAlumno.apellido}
                         onChange={handleUpdateFormChange}
                         margin="normal"
-                        error={!!errors.apellido}
-                        helperText={errors.apellido}
                     />
                     <TextField
                         fullWidth
@@ -644,8 +682,6 @@ const EditModal = ({ alumno, updateAlumno, open, handleClose, validateRow }) => 
                         value={updatedAlumno.dni}
                         onChange={handleUpdateFormChange}
                         margin="normal"
-                        error={!!errors.dni}
-                        helperText={errors.dni}
                     />
 
                     <Box sx={{ display: "flex", justifyContent: "space-between", gap: 2 }}>
@@ -658,8 +694,6 @@ const EditModal = ({ alumno, updateAlumno, open, handleClose, validateRow }) => 
                             value={updatedAlumno.auxFechaEmision}
                             onChange={handleUpdateFormChange}
                             margin="normal"
-                            error={!!errors.fecha_emision}
-                            helperText={errors.fecha_emision}
                         />
                         <TextField
                             fullWidth
@@ -670,8 +704,6 @@ const EditModal = ({ alumno, updateAlumno, open, handleClose, validateRow }) => 
                             value={updatedAlumno.auxFechaVencimiento}
                             onChange={handleUpdateFormChange}
                             margin="normal"
-                            error={!!errors.fecha_vencimiento}
-                            helperText={errors.fecha_vencimiento}
                         />
                     </Box>
 
@@ -682,16 +714,14 @@ const EditModal = ({ alumno, updateAlumno, open, handleClose, validateRow }) => 
                         <Button variant="contained" color="primary" onClick={handleClose}>
                             CANCELAR
                         </Button>
-                        {
-                            <Button
-                                variant="contained"
-                                color="success"
-                                onClick={handleUpdateAlumno}
-                            >
-                                ACEPTAR
-                            </Button>
-
-                        }
+                        <Button
+                            variant="contained"
+                            color="success"
+                            disabled={!changed}
+                            onClick={handleUpdateAlumno}
+                        >
+                            ACEPTAR
+                        </Button>
 
                     </Box>
                 </Paper>

@@ -108,7 +108,7 @@ export const generatePDFBatch = (csvData, download) => {
         pdf.setFontSize(8);
         pdf.setFont("IBMPlex", "normal"); // Using normal (non-bold) for regular text
         pdf.setTextColor(109, 110, 113);
-        pdf.text("DNI: " + alumno.dni, position.x + 2.55, position.y + 2.205);
+        pdf.text("DNI: " + alumno.dni.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."), position.x + 2.55, position.y + 2.205);
         pdf.text("FECHA: " + alumno.fecha_1, position.x + 2.55, position.y + 2.595);
 
         pdf.setTextColor(237, 28, 36); // Red
