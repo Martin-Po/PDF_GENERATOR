@@ -13,12 +13,6 @@ import { montserratBoldFont } from "../assets/fonts/Montserrat-Bold-bold";
 
 
 export const generatePDF = (qrValue, formData, download) => {
-  console.log("QR Value:", qrValue);
-  console.log("Form Data:", formData);
-  console.log("Apellido:", formData.apellido);
-
-
-
   if (!qrValue) return;
 
   const pdf = new jsPDF("portrait", "cm", "a4");

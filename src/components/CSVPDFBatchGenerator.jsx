@@ -40,6 +40,7 @@ const CSVPDFBatchGenerator = ({ csvData, setCsvData }) => {
         setLoading(true);
         setCsvData(null); // Reset CSV data
 
+
         try {
             const file = event.target.files[0];
             if (!file) return;
@@ -51,66 +52,72 @@ const CSVPDFBatchGenerator = ({ csvData, setCsvData }) => {
             if (file.type === "text/csv") {
                 Papa.parse(file, {
                     complete: async (result) => {
-                        // Process headers and convert them to lowercase
-                        const data = await Promise.all(
-                            result.data.map(async (row) => {
-                                const lowercaseRow = {};
-
-                                Object.keys(row).forEach((key) => {
-                                    const formattedKey = key.toLowerCase().replace(/\s+/g, "_"); // Lowercase & replace spaces
-                                    lowercaseRow[formattedKey] = row[key];
-                                });
-
-                                lowercaseRow.rowId = Math.random().toString(36).substr(2, 9); // Generate a random ID for each row
-
-                                // Fetch image and add `imageFile` property if URL exists
-                                try {
-                                    if (lowercaseRow.url_de_img) {
-                                        lowercaseRow.imageFile = await fetchImage(lowercaseRow.url_de_img);
-                                    } else {
+                        try {
+                            // Process headers and convert them to lowercase
+                            const data = await Promise.all(
+                                result.data.map(async (row) => {
+                                    const lowercaseRow = {};
+    
+                                    Object.keys(row).forEach((key) => {
+                                        const formattedKey = key.toLowerCase().replace(/\s+/g, "_"); // Lowercase & replace spaces
+                                        lowercaseRow[formattedKey] = row[key];
+                                    });
+    
+                                    lowercaseRow.rowId = Math.random().toString(36).substr(2, 9); // Generate a random ID for each row
+    
+                                    // Fetch image and add `imageFile` property if URL exists
+                                    try {
+                                        if (lowercaseRow.url_de_img) {
+                                            lowercaseRow.imageFile = await fetchImage(lowercaseRow.url_de_img);
+                                        } else {
+                                            lowercaseRow.imageFile = error_image;
+                                        }
+    
+                                    } catch (error) {
+                                        console.log(error);
+    
+                                        // If fetchImage fails (throws an error), use the fallback image
                                         lowercaseRow.imageFile = error_image;
                                     }
-
-                                } catch (error) {
-                                    console.log(error);
-
-                                    // If fetchImage fails (throws an error), use the fallback image
-                                    lowercaseRow.imageFile = error_image;
-                                }
-
-                                try {
-                                    if (lowercaseRow.id) {
-                                        lowercaseRow.qrValue = `https://cursos29.infomatika.app/certificados/index.php?idp=${lowercaseRow.id}`
-                                        lowercaseRow.qrImage = await generateQR(lowercaseRow.id);
+    
+                                    try {
+                                        if (lowercaseRow.id) {
+                                            lowercaseRow.qrValue = `https://cursos29.infomatika.app/certificados/index.php?idp=${lowercaseRow.id}`
+                                            lowercaseRow.qrImage = await generateQR(lowercaseRow.id);
+                                        }
+    
+                                    } catch (error) {
+                                        console.log(error);
                                     }
-
-                                } catch (error) {
-                                    console.log(error);
-                                }
-
-                                lowercaseRow.error = validateRow(lowercaseRow); // Validate the row
-                                if (!lowercaseRow.error.fecha_1) {
-                                    const [day, month, year] = lowercaseRow.fecha_1.split('/');
-                                    const date = new Date(`${year}-${month}-${day}`); // Ensures correct parsing
-
-                                    const nextYear = new Date(date);
-                                    nextYear.setFullYear(date.getUTCFullYear() + 1);
-
-                                    // Formatting the date as DD/MM/YYYY
-                                    const dayStr = String(nextYear.getUTCDate()).padStart(2, '0');
-                                    const monthStr = String(nextYear.getUTCMonth() + 1).padStart(2, '0'); // Months are 0-based
-                                    const yearStr = nextYear.getUTCFullYear();
-
-                                    lowercaseRow.fecha_vencimiento = `${dayStr}/${monthStr}/${yearStr}`;
-                                }
-                                lowercaseRow.isValid = Object.keys(lowercaseRow.error).length === 0; // Check if the row is valid
-
-                                return lowercaseRow;
-                            })
-                        );
-
-                        console.log("Parsed CSV with Images:", data);
-                        setCsvData(data); // Save processed data with images into state
+    
+                                    lowercaseRow.error = validateRow(lowercaseRow); // Validate the row
+                                    if (!lowercaseRow.error.fecha_1) {
+                                        const [day, month, year] = lowercaseRow.fecha_1.split('/');
+                                        const date = new Date(`${year}-${month}-${day}`); // Ensures correct parsing
+    
+                                        const nextYear = new Date(date);
+                                        nextYear.setFullYear(date.getUTCFullYear() + 1);
+    
+                                        // Formatting the date as DD/MM/YYYY
+                                        const dayStr = String(nextYear.getUTCDate()).padStart(2, '0');
+                                        const monthStr = String(nextYear.getUTCMonth() + 1).padStart(2, '0'); // Months are 0-based
+                                        const yearStr = nextYear.getUTCFullYear();
+    
+                                        lowercaseRow.fecha_vencimiento = `${dayStr}/${monthStr}/${yearStr}`;
+                                    }
+                                    lowercaseRow.isValid = Object.keys(lowercaseRow.error).length === 0; // Check if the row is valid
+    
+                                    return lowercaseRow;
+                                })
+                            );
+                            setCsvData(data); // Save processed data with images into state
+                            
+                        } catch (error) {
+                            console.error("Error parsing CSV:", error);                            
+                        }
+                        finally {
+                            setLoading(false);
+                        }
                     },
                     header: true, // If your CSV has headers
                     skipEmptyLines: true, // Skip empty lines
@@ -121,10 +128,9 @@ const CSVPDFBatchGenerator = ({ csvData, setCsvData }) => {
         }
         catch (error) {
             console.error("Error uploading file:", error);
-        }
-        finally {
             setLoading(false);
         }
+       
     };
 
     const generateQR = async (id) => {
@@ -163,8 +169,6 @@ const CSVPDFBatchGenerator = ({ csvData, setCsvData }) => {
 
     const validateRow = (row) => {
         let newErrors = {};
-        console.log("row", row);
-
 
         if (!row.id) newErrors.id = "ID Usuario es requerido";
         if (!row.nombre) newErrors.nombre = "Nombre es requerido";
@@ -185,8 +189,6 @@ const CSVPDFBatchGenerator = ({ csvData, setCsvData }) => {
         }
         if (row.imageFile === error_image) newErrors.url_de_img = "Error al cargar la imagen";
         if (!row.url_de_img) newErrors.url_de_img = "Imagen es requerida";
-        console.log("newErrors", newErrors);
-
 
         return newErrors;
     };
@@ -509,32 +511,22 @@ const EditModal = ({ alumno, updateAlumno, open, handleClose, validateRow, setOp
 
         const { name, value } = e.target;
         let updatedErrors = {}
-        console.log("name", name);
 
         setChanged(true);
         
 
         if (name === "fecha_emision") {
-            console.log("If fecha_emision");
-
 
             let [year, month, day] = value.split("-")
             const updatedFechaEmision = `${day}/${month}/${year}`
-            console.log("Fecha enviada " + `${day}/${month}/${year}`);
-
-
             updatedErrors.error = validateRow({ ...alumno, fecha_1: updatedFechaEmision });
         }
         else if (name === "fecha_vencimiento") {
-            console.log("If fecha_vencimiento");
-
             let [year, month, day] = value.split("-")
             const updatedFechaVencimiento = `${day}/${month}/${year}`
             updatedErrors.error = validateRow({ ...alumno, fecha_vencimiento: updatedFechaVencimiento });
         }
         else {
-            console.log("Else");
-
             updatedErrors.error = validateRow({ ...alumno, [name]: value });
         }
 
@@ -567,8 +559,6 @@ const EditModal = ({ alumno, updateAlumno, open, handleClose, validateRow, setOp
                 break;
 
             case "fecha_emision": {
-                console.log("value", value);
-
                 const date = new Date(value);
                 if (isNaN(date.getTime())) return;
 
