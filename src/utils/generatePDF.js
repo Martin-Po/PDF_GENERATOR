@@ -12,8 +12,7 @@ import { montserratBoldFont } from "../assets/fonts/Montserrat-Bold-bold";
 
 
 
-export const generatePDF = (qrValue, formData, download) => {
-  if (!qrValue) return;
+export const generatePDF = (formData, download) => {
 
   const pdf = new jsPDF("portrait", "cm", "a4");
 
@@ -87,10 +86,10 @@ export const generatePDF = (qrValue, formData, download) => {
   pdf.setFontSize(16);
 
   // Add QR Code
-  const qrCanvas = document.getElementById("qr-code").querySelector("canvas");
-  const qrImage = qrCanvas.toDataURL("image/png");
+  // const qrCanvas = document.getElementById("qr-code").querySelector("canvas");
+  // const qrImage = qrCanvas.toDataURL("image/png");
 
-  pdf.addImage(qrImage, "PNG", 17.66, 1.71, 1.46, 1.46);
+  pdf.addImage(formData.qrImage, "PNG", 17.66, 1.71, 1.46, 1.46);
 
   // Set bold for specific text
   pdf.setFontSize(5);
@@ -119,7 +118,14 @@ export const generatePDF = (qrValue, formData, download) => {
   pdf.setFont("IBMPlex", "normal"); // Using normal (non-bold) for regular text
   pdf.setFontSize(13);
   pdf.setTextColor(109, 110, 113);
-  addCenterAlignedText(pdf, formData.dni, 10.02);
+  if (formData.dni.includes('.'))
+    {
+      addCenterAlignedText(pdf, formData.dni, 10.02);
+    }  
+    else
+    {
+      addCenterAlignedText(pdf, formData.dni.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."), 10.02);
+    }
   
   pdf.setTextColor(237, 28, 36); // Red
   pdf.setFont("IBMPlex", "bold"); // Using normal (non-bold) for regular text 
@@ -190,7 +196,7 @@ export const generatePDF = (qrValue, formData, download) => {
   pdf.rect(2.43, 6.485, 2, 2.375, "F"); // Background
   pdf.setFillColor("white"); // 
   pdf.rect(2.43 + 1 - (1.5/2), 6.79, 1.5, 1.5, "F"); // Inner white square
-  pdf.addImage(qrImage, "PNG", 2.43 + 1 - (1.39/2), 6.79 + 1.5/ 2 - 1.39/2, 1.39, 1.39);  
+  pdf.addImage(formData.qrImage, "PNG", 2.43 + 1 - (1.39/2), 6.79 + 1.5/ 2 - 1.39/2, 1.39, 1.39);  
   pdf.setFontSize(5.65);
   pdf.setTextColor("white");
   pdf.setFont("Montserrat", "bold");
@@ -226,7 +232,14 @@ export const generatePDF = (qrValue, formData, download) => {
   pdf.setFontSize(8);
   pdf.setFont("IBMPlex", "normal"); // Using normal (non-bold) for regular text
   pdf.setTextColor(109, 110, 113);
-  pdf.text("DNI: " + formData.dni, 4.63, 6.39);
+  if (formData.dni.includes('.'))
+  {
+    pdf.text("DNI: " + formData.dni, 4.63, 6.39);
+  }  
+  else
+  {
+    pdf.text("DNI: " + formData.dni.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."),  4.63, 6.39);
+  }
   pdf.text("FECHA: " + formatDate(formData.fecha_emision), 4.63, 6.78);
 
   pdf.setTextColor(237, 28, 36); // Red

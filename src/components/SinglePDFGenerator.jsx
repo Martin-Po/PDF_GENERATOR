@@ -6,6 +6,8 @@ import FileUploadIcon from "@mui/icons-material/FileUpload";
 import error_image from "../assets/error_image.png";
 import { useRef } from "react";
 import { generatePDF } from "../utils/generatePDF";
+import QRCode from "qrcode";
+
 
 
 const SinglePDFGenerator = ({formData, setFormData}) => {
@@ -24,15 +26,25 @@ const SinglePDFGenerator = ({formData, setFormData}) => {
     }
   }, [formData.imageUrl]); // This hook runs whenever imageUrl changes
 
-  const handleChange = (e) => {
+  const handleChange = async (e) => {
     setDownload(false);
 
     const { name, value } = e.target;
 
     switch (name) {
       case "id_usuario":
-        if (!/^\d*$/.test(value)) return;
-        break;
+        {
+          if (!/^\d*$/.test(value)) return;
+          const qrValue = `https://cursos29.infomatika.app/certificados/index.php?idp=${value}`
+          const qrImage = await generateQR(value);
+          setFormData((prev) => ({
+              ...prev,
+              id_usuario: value,
+              qrValue: qrValue,
+              qrImage: qrImage,
+          }));
+          return;
+      }
 
       case "nombre":
         break;
@@ -116,13 +128,18 @@ const SinglePDFGenerator = ({formData, setFormData}) => {
 
 
 
-  const generateQR = () => {
-    console.log("Generating QR Code...");
-    
-    const dataString = `https://cursos29.infomatika.app/certificados/index.php?idp=${formData.id_usuario}`;
-    setQrValue(dataString);
-    return dataString;
-  };
+
+  const generateQR = async (id) => {
+    const url = `https://cursos29.infomatika.app/certificados/index.php?idp=${id}`;
+    setQrValue(url);
+    return await QRCode.toDataURL(url, {
+        width: 125,
+        margin: 0,
+        errorCorrectionLevel: 'L',  // 'L' gives the smallest margin
+    });
+};
+
+ 
   
   const validateForm = () => {
     let newErrors = {};
@@ -144,10 +161,11 @@ const SinglePDFGenerator = ({formData, setFormData}) => {
   };
 
 
+
+  
   const handleGeneratePDF = async () => {
     if (validateForm()) {
-      const newQRValue = await generateQR(formData.id_usuario);
-      if (generatePDF(newQRValue, formData, download)) {
+      if (generatePDF(formData, download)) {
         setDownload(true);}
     }
   };

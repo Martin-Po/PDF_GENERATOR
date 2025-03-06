@@ -28,7 +28,9 @@ function App() {
 
 
   return (
-    <Container maxWidth="sm">
+    <Container style={{ maxWidth: '650px' }}>
+    {/* <Container maxWidth="sm"> */}
+
       <Paper elevation={3} sx={{ p: 4, mt: 4, textAlign: "center" }}>
       <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
         <Tabs value={selectedTab} onChange={handleChange} aria-label="basic tabs example">

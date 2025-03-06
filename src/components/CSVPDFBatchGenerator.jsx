@@ -1,6 +1,6 @@
 /* eslint-disable react/prop-types */
 import { useEffect, useState } from "react";
-import { Button, Typography, Box, Alert, IconButton, TextField, Paper, Container, CircularProgress } from "@mui/material";
+import { Button, Typography, Box, Alert, IconButton, TextField, Paper, Container, CircularProgress, Grid2 } from "@mui/material";
 import { QRCodeCanvas } from "qrcode.react";
 import FileUploadIcon from "@mui/icons-material/FileUpload";
 import error_image from "../assets/error_image.png";
@@ -11,6 +11,10 @@ import QRCode from "qrcode";
 import DeleteIcon from '@mui/icons-material/Delete';
 import Modal from '@mui/material/Modal';
 import EditIcon from '@mui/icons-material/Edit';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import { generatePDF } from "../utils/generatePDF";
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
+
 
 
 const CSVPDFBatchGenerator = ({ csvData, setCsvData }) => {
@@ -19,10 +23,20 @@ const CSVPDFBatchGenerator = ({ csvData, setCsvData }) => {
     const [download, setDownload] = useState(false);
     const [loading, setLoading] = useState(false);
 
+    
+    // useEffect(() => {
+    //     // Check if all alumnos have download set to true
+    //     const allDownloaded = csvData.every(alumno => alumno.download === true);
+    
+    //     if (allDownloaded) {
+    //         setDownload(true);
+    //     }
+    // }, [csvData]); 
 
 
 
     const removeAlumno = (rowId) => {
+        setDownload(false); // Reset download state
         setCsvData((prevAlumnos) => prevAlumnos.filter(alumno => alumno.rowId !== rowId));
     };
 
@@ -30,7 +44,7 @@ const CSVPDFBatchGenerator = ({ csvData, setCsvData }) => {
         setDownload(false); // Reset download state
         setCsvData((prevAlumnos) =>
             prevAlumnos.map(alumno =>
-                alumno.rowId === rowId ? { ...alumno, ...updatedAlumno } : alumno
+                alumno.rowId === rowId ? { ...alumno, ...updatedAlumno, download: false } : alumno
             )
         );
     };
@@ -59,7 +73,10 @@ const CSVPDFBatchGenerator = ({ csvData, setCsvData }) => {
                                     const lowercaseRow = {};
     
                                     Object.keys(row).forEach((key) => {
-                                        const formattedKey = key.toLowerCase().replace(/\s+/g, "_"); // Lowercase & replace spaces
+                                        let formattedKey = key.toLowerCase().replace(/\s+/g, "_")
+                                        if(key.toLowerCase().replace(/\s+/g, "_") === "fecha_1"){
+                                            formattedKey = "fecha_emision"
+                                        }                                         
                                         lowercaseRow[formattedKey] = row[key];
                                     });
     
@@ -91,8 +108,8 @@ const CSVPDFBatchGenerator = ({ csvData, setCsvData }) => {
                                     }
     
                                     lowercaseRow.error = validateRow(lowercaseRow); // Validate the row
-                                    if (!lowercaseRow.error.fecha_1) {
-                                        const [day, month, year] = lowercaseRow.fecha_1.split('/');
+                                    if (!lowercaseRow.error.fecha_emision) {
+                                        const [day, month, year] = lowercaseRow.fecha_emision.split('/');
                                         const date = new Date(`${year}-${month}-${day}`); // Ensures correct parsing
     
                                         const nextYear = new Date(date);
@@ -106,6 +123,8 @@ const CSVPDFBatchGenerator = ({ csvData, setCsvData }) => {
                                         lowercaseRow.fecha_vencimiento = `${dayStr}/${monthStr}/${yearStr}`;
                                     }
                                     lowercaseRow.isValid = Object.keys(lowercaseRow.error).length === 0; // Check if the row is valid
+
+                                    lowercaseRow.download = false
     
                                     return lowercaseRow;
                                 })
@@ -177,14 +196,14 @@ const CSVPDFBatchGenerator = ({ csvData, setCsvData }) => {
         else {
             if (!/^\d{7,8}$/.test(row.dni)) newErrors.dni = "Formato DNI incorrecto. Debe ser xxxxxxx (solo números)";
         }
-        if (!/^\d{2}\/\d{2}\/\d{4}$/.test(row.fecha_1)) {
-            newErrors.fecha_1 = "Formato fecha incorrecto. Debe ser DD/MM/AAAA";
+        if (!/^\d{2}\/\d{2}\/\d{4}$/.test(row.fecha_emision)) {
+            newErrors.fecha_emision = "Formato fecha incorrecto. Debe ser DD/MM/AAAA";
         } else {
             // Verifica si la fecha es válida
-            const [day, month, year] = row.fecha_1.split('/').map(num => parseInt(num, 10));
+            const [day, month, year] = row.fecha_emision.split('/').map(num => parseInt(num, 10));
             const date = new Date(year, month - 1, day); // Mes en JavaScript empieza en 0
             if (date.getDate() !== day || date.getMonth() !== month - 1 || date.getFullYear() !== year) {
-                newErrors.fecha_1 = "Fecha no válida";
+                newErrors.fecha_emision = "Fecha no válida";
             }
         }
         if (row.imageFile === error_image) newErrors.url_de_img = "Error al cargar la imagen";
@@ -196,9 +215,23 @@ const CSVPDFBatchGenerator = ({ csvData, setCsvData }) => {
     const handleGeneratePDF = async () => {
         if (generatePDFBatch(csvData, download)) {
             setDownload(true);
+            setCsvData((prevAlumnos) =>
+                prevAlumnos.map(alumno => ({
+                    ...alumno,
+                    download: true // Assuming you want to set it to true
+                }))
+            );            
         }
     };
 
+    const handleGenerateSinglePDF = async (credencial, download) => {
+        generatePDF(credencial, download)
+        setCsvData((prevAlumnos) =>
+                prevAlumnos.map(alumno =>
+                    alumno.rowId === credencial.rowId ? { ...alumno, download: true } : alumno
+                )
+            );
+    }
 
 
     return (
@@ -252,11 +285,35 @@ const CSVPDFBatchGenerator = ({ csvData, setCsvData }) => {
 
             </Box>
 
-            {csvData && [...csvData].sort((a, b) => a.isValid - b.isValid).map((alumno) => {
+            {csvData && [...csvData].sort((a, b) => a.isValid - b.isValid).map((alumno, index) => {
 
                 return (
+                    <Grid2  key={alumno.rowId} container sx={{ width: '100%', alignItems:'center'}} spacing={0}>
+                        <Grid2 xs={1} sx={{ width: '5%' }}>
+                            <Box>{index + 1}</Box>
+                        </Grid2>
 
-                    <PreviewCard alumno={alumno} key={alumno.rowId} removeAlumno={removeAlumno} updateAlumno={updateAlumno} validateRow={validateRow} generateQR={generateQR} setDownload={setDownload} />
+                        <Grid2 xs={10} sx={{ width: '90%' }}>
+                            <PreviewCard
+                                alumno={alumno}
+                                key={alumno.rowId}
+                                removeAlumno={removeAlumno}
+                                updateAlumno={updateAlumno}
+                                validateRow={validateRow}
+                                generateQR={generateQR}
+                            />
+                        </Grid2>
+
+                        <Grid2 xs={1} sx={{ width: '5%' }}>
+                        <IconButton sx={{padding:'4px'}} onClick={() => handleGenerateSinglePDF(alumno, false)} >
+                                <PictureAsPdfIcon />
+                            </IconButton>
+                            <IconButton sx={{padding:'4px'}} onClick={() => handleGenerateSinglePDF(alumno, true)} disabled={!alumno.download} >
+                                <FileDownloadIcon />
+                            </IconButton>
+                        </Grid2>
+                    </Grid2>
+
 
                 )
             })}
@@ -299,13 +356,12 @@ const PreviewCard = ({ alumno, removeAlumno, updateAlumno, validateRow, generate
     return (
 
         <Box sx={{
-
+            width:'fill-available',
             position: 'relative',
             display: 'flex',
             flexDirection: 'column',
             borderColor: 'success.main', p: 2, mt: 2, padding: '10px',
             margin: '5px',
-            marginBottom: '0.5rem',
             borderRadius: '5px',
             backgroundColor: alumno.isValid ? '#c8e6c9' : '#ffcdd2', // Green for valid, Red for invalid
             border: alumno.isValid ? '1px solid #388e3c' : '1px solid #f44336', // Green border for valid, Red border for invalid
@@ -442,7 +498,7 @@ const PreviewCard = ({ alumno, removeAlumno, updateAlumno, validateRow, generate
                         pointerEvents: expanded ? 'auto' : 'none',  // Prevents interaction when hidden
                         position: expanded ? 'relative' : 'absolute',  // Position the QR code absolutely when expanded
                         opacity: expanded ? 1 : 0,  // Hides when not expanded
-                    }} variant="h6">{alumno.fecha_1}</Typography>
+                    }} variant="h6">{alumno.fecha_emision}</Typography>
                 </Box>
             </Box>
             <Box>
@@ -463,8 +519,8 @@ const EditModal = ({ alumno, updateAlumno, open, handleClose, validateRow, setOp
     let auxFechaEmision = ""
     let auxFechaVencimiento = ""
 
-    if (alumno.fecha_1?.split('/').length === 3) {
-        let [day, month, year] = alumno.fecha_1.split('/');
+    if (alumno.fecha_emision?.split('/').length === 3) {
+        let [day, month, year] = alumno.fecha_emision.split('/');
         auxFechaEmision = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
 
         if (alumno.fecha_vencimiento?.split('/').length === 3) {
@@ -483,7 +539,7 @@ const EditModal = ({ alumno, updateAlumno, open, handleClose, validateRow, setOp
         dni: alumno.dni,
         auxFechaEmision: auxFechaEmision,
         auxFechaVencimiento: auxFechaVencimiento,
-        fecha_1: alumno.fecha_1,
+        fecha_emision: alumno.fecha_emision,
         fecha_vencimiento: alumno.fecha_vencimiento,
         imageUrl: alumno.url_de_img, // Store image URL
         imageFile: alumno.imageFile, // Store selected file
@@ -498,7 +554,7 @@ const EditModal = ({ alumno, updateAlumno, open, handleClose, validateRow, setOp
             dni: alumno.dni,
             auxFechaEmision: auxFechaEmision,
             auxFechaVencimiento: auxFechaVencimiento,
-            fecha_1: alumno.fecha_1,
+            fecha_emision: alumno.fecha_emision,
             fecha_vencimiento: alumno.fecha_vencimiento,
             imageUrl: alumno.url_de_img, // Store image URL
             imageFile: alumno.imageFile, // Store selected file
@@ -519,7 +575,7 @@ const EditModal = ({ alumno, updateAlumno, open, handleClose, validateRow, setOp
 
             let [year, month, day] = value.split("-")
             const updatedFechaEmision = `${day}/${month}/${year}`
-            updatedErrors.error = validateRow({ ...alumno, fecha_1: updatedFechaEmision });
+            updatedErrors.error = validateRow({ ...alumno, fecha_emision: updatedFechaEmision });
         }
         else if (name === "fecha_vencimiento") {
             let [year, month, day] = value.split("-")
@@ -574,7 +630,7 @@ const EditModal = ({ alumno, updateAlumno, open, handleClose, validateRow, setOp
                 setUpdatedAlumno((prev) => ({
                     ...prev,
                     auxFechaEmision: value,
-                    fecha_1: updatedFechaEmision,
+                    fecha_emision: updatedFechaEmision,
                     fecha_vencimiento: updatedFechaVencimiento,
                     auxFechaVencimiento: nextYear.toISOString().split("T")[0],
                     error: updatedErrors.error,

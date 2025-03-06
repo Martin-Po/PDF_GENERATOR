@@ -1,5 +1,5 @@
 import { jsPDF } from "jspdf";
-import cursos29_logo from "../assets/cursos29_logo.png";
+// import cursos29_logo from "../assets/cursos29_logo.png"; Eliminado a pedido del cliente.
 import firmaPNG from "../assets/firma.png";
 import person_icon from "../assets/person_icon.png";
 import { montserratFont } from "../assets/fonts/Montserrat-Regular-normal";
@@ -120,7 +120,7 @@ export const generatePDFBatch = (csvData, download) => {
         pdf.text("Alcance: Vehículos hasta 3500 kg.", position.x + 2.55, position.y + 3.425);
 
         pdf.addImage(firmaPNG, "PNG", position.x + 6.67, position.y + 2.885, 1.3, 1.6);
-        pdf.addImage(cursos29_logo, "PNG", position.x + 5.64, position.y + 1.795, 1.85, 1.85);
+        // pdf.addImage(cursos29_logo, "PNG", position.x + 5.64, position.y + 1.795, 1.85, 1.85); Eliminado a pedido del cliente.
 
 
         pdf.setFont("Montserrat", "bold");
