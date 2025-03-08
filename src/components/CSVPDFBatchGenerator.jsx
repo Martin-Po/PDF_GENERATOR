@@ -14,6 +14,9 @@ import EditIcon from '@mui/icons-material/Edit';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import { generatePDF } from "../utils/generatePDF";
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
+import PersonIcon from '@mui/icons-material/Person';
+import firmaPNG from "../assets/firma.png";
+import cursos29_logo from "../assets/cursos29_logo.png";
 
 
 
@@ -23,11 +26,11 @@ const CSVPDFBatchGenerator = ({ csvData, setCsvData }) => {
     const [download, setDownload] = useState(false);
     const [loading, setLoading] = useState(false);
 
-    
+
     // useEffect(() => {
     //     // Check if all alumnos have download set to true
     //     const allDownloaded = csvData.every(alumno => alumno.download === true);
-    
+
     //     if (allDownloaded) {
     //         setDownload(true);
     //     }
@@ -71,17 +74,17 @@ const CSVPDFBatchGenerator = ({ csvData, setCsvData }) => {
                             const data = await Promise.all(
                                 result.data.map(async (row) => {
                                     const lowercaseRow = {};
-    
+
                                     Object.keys(row).forEach((key) => {
                                         let formattedKey = key.toLowerCase().replace(/\s+/g, "_")
-                                        if(key.toLowerCase().replace(/\s+/g, "_") === "fecha_1"){
+                                        if (key.toLowerCase().replace(/\s+/g, "_") === "fecha_1") {
                                             formattedKey = "fecha_emision"
-                                        }                                         
+                                        }
                                         lowercaseRow[formattedKey] = row[key];
                                     });
-    
+
                                     lowercaseRow.rowId = Math.random().toString(36).substr(2, 9); // Generate a random ID for each row
-    
+
                                     // Fetch image and add `imageFile` property if URL exists
                                     try {
                                         if (lowercaseRow.url_de_img) {
@@ -89,50 +92,50 @@ const CSVPDFBatchGenerator = ({ csvData, setCsvData }) => {
                                         } else {
                                             lowercaseRow.imageFile = error_image;
                                         }
-    
+
                                     } catch (error) {
                                         console.log(error);
-    
+
                                         // If fetchImage fails (throws an error), use the fallback image
                                         lowercaseRow.imageFile = error_image;
                                     }
-    
+
                                     try {
                                         if (lowercaseRow.id) {
                                             lowercaseRow.qrValue = `https://cursos29.infomatika.app/certificados/index.php?idp=${lowercaseRow.id}`
                                             lowercaseRow.qrImage = await generateQR(lowercaseRow.id);
                                         }
-    
+
                                     } catch (error) {
                                         console.log(error);
                                     }
-    
+
                                     lowercaseRow.error = validateRow(lowercaseRow); // Validate the row
                                     if (!lowercaseRow.error.fecha_emision) {
                                         const [day, month, year] = lowercaseRow.fecha_emision.split('/');
                                         const date = new Date(`${year}-${month}-${day}`); // Ensures correct parsing
-    
+
                                         const nextYear = new Date(date);
                                         nextYear.setFullYear(date.getUTCFullYear() + 1);
-    
+
                                         // Formatting the date as DD/MM/YYYY
                                         const dayStr = String(nextYear.getUTCDate()).padStart(2, '0');
                                         const monthStr = String(nextYear.getUTCMonth() + 1).padStart(2, '0'); // Months are 0-based
                                         const yearStr = nextYear.getUTCFullYear();
-    
+
                                         lowercaseRow.fecha_vencimiento = `${dayStr}/${monthStr}/${yearStr}`;
                                     }
                                     lowercaseRow.isValid = Object.keys(lowercaseRow.error).length === 0; // Check if the row is valid
 
                                     lowercaseRow.download = false
-    
+
                                     return lowercaseRow;
                                 })
                             );
                             setCsvData(data); // Save processed data with images into state
-                            
+
                         } catch (error) {
-                            console.error("Error parsing CSV:", error);                            
+                            console.error("Error parsing CSV:", error);
                         }
                         finally {
                             setLoading(false);
@@ -149,7 +152,7 @@ const CSVPDFBatchGenerator = ({ csvData, setCsvData }) => {
             console.error("Error uploading file:", error);
             setLoading(false);
         }
-       
+
     };
 
     const generateQR = async (id) => {
@@ -220,17 +223,17 @@ const CSVPDFBatchGenerator = ({ csvData, setCsvData }) => {
                     ...alumno,
                     download: true // Assuming you want to set it to true
                 }))
-            );            
+            );
         }
     };
 
     const handleGenerateSinglePDF = async (credencial, download) => {
         generatePDF(credencial, download)
         setCsvData((prevAlumnos) =>
-                prevAlumnos.map(alumno =>
-                    alumno.rowId === credencial.rowId ? { ...alumno, download: true } : alumno
-                )
-            );
+            prevAlumnos.map(alumno =>
+                alumno.rowId === credencial.rowId ? { ...alumno, download: true } : alumno
+            )
+        );
     }
 
 
@@ -288,7 +291,7 @@ const CSVPDFBatchGenerator = ({ csvData, setCsvData }) => {
             {csvData && [...csvData].sort((a, b) => a.isValid - b.isValid).map((alumno, index) => {
 
                 return (
-                    <Grid2  key={alumno.rowId} container sx={{ width: '100%', alignItems:'center'}} spacing={0}>
+                    <Grid2 key={alumno.rowId} container sx={{ width: '100%', alignItems: 'center' }} spacing={0}>
                         <Grid2 xs={1} sx={{ width: '5%' }}>
                             <Box>{index + 1}</Box>
                         </Grid2>
@@ -305,10 +308,10 @@ const CSVPDFBatchGenerator = ({ csvData, setCsvData }) => {
                         </Grid2>
 
                         <Grid2 xs={1} sx={{ width: '5%' }}>
-                        <IconButton sx={{padding:'4px'}} onClick={() => handleGenerateSinglePDF(alumno, false)} >
+                            <IconButton sx={{ padding: '4px' }} onClick={() => handleGenerateSinglePDF(alumno, false)} >
                                 <PictureAsPdfIcon />
                             </IconButton>
-                            <IconButton sx={{padding:'4px'}} onClick={() => handleGenerateSinglePDF(alumno, true)} disabled={!alumno.download} >
+                            <IconButton sx={{ padding: '4px' }} onClick={() => handleGenerateSinglePDF(alumno, true)} disabled={!alumno.download} >
                                 <FileDownloadIcon />
                             </IconButton>
                         </Grid2>
@@ -356,17 +359,17 @@ const PreviewCard = ({ alumno, removeAlumno, updateAlumno, validateRow, generate
     return (
 
         <Box sx={{
-            width:'fill-available',
+            width: 'fill-available',
             position: 'relative',
             display: 'flex',
             flexDirection: 'column',
-            borderColor: 'success.main', p: 2, mt: 2, padding: '10px',
+            borderColor: 'success.main', p: 2, mt: 2, padding: '10px', paddingTop:'7px', paddingBottom: expanded ? '5px' : '10px', justifyContent:'center',
             margin: '5px',
             borderRadius: '5px',
-            backgroundColor: alumno.isValid ? '#c8e6c9' : '#ffcdd2', // Green for valid, Red for invalid
+            backgroundColor: expanded ? 'white' : alumno.isValid ? '#c8e6c9' : '#ffcdd2', // Green for valid, Red for invalid
             border: alumno.isValid ? '1px solid #388e3c' : '1px solid #f44336', // Green border for valid, Red border for invalid
             transition: 'height 0.6s ease',  // Smooth transition for height
-            height: expanded ? `${150 + errores * 53}px` : `${65 + errores * 53}px`,
+            height: expanded ? `${280 + errores * 53}px` : `${65 + errores * 53}px`,
         }}
             onClick={() => setExpanded(!expanded)}
             onMouseEnter={() => setHovered(true)}
@@ -380,6 +383,8 @@ const PreviewCard = ({ alumno, removeAlumno, updateAlumno, validateRow, generate
                     top: 0,
                     right: 0,
                     opacity: hovered ? 1 : 0,  // Show the box when hovered
+                    backgroundColor: expanded ? '#d3d3d3' : 'none',
+                    borderRadius: '15px',
                     transition: 'opacity 0.3s ease, visibility 0.3s ease',  // Smooth transition for visibility and opacity
                 }}
                 className="hover-box"
@@ -397,109 +402,206 @@ const PreviewCard = ({ alumno, removeAlumno, updateAlumno, validateRow, generate
                     <DeleteIcon />
                 </IconButton>
             </Box>
-
+            
             <Box
-                ref={ref}
                 sx={{
-                    display: 'flex',
-                    flexDirection: 'row',
-                    justifyContent: 'flex-start',
-                    alignItems: 'center',
-                    width: '100%',  // Ensure the outer box doesn't allow overflow
-                    overflow: 'hidden',  // Prevent overflow
+                    position: 'absolute',  // Position this box absolutely in relation to its parent container
+                    bottom: 40,
+                    right: 20,
+                    borderRadius: '15px',
+                    opacity: expanded ? 1 : 0,
+                    visibility: expanded ? 'visible' : 'hidden',  // Keeps element in DOM but hides it
+                    transition: 'transform 0.5s ease, opacity 0.3s ease',  // Smooth transition effect
+               
                 }}
             >
-                <Box sx={{
-                    display: 'flex',
-                    flexDirection: 'row',
-                    justifyContent: 'space-evenly',
-                    alignItems: 'center',
-                    gap: '0.85rem',
-                    maxWidth: '100%',
-                    transition: 'all 0.6s ease', // Ensure width and height transitions smoothly
-                }}>
+                <img
+                    src={firmaPNG}
+                    alt="Preview"
+                    style={{
+                        
+                        transition: 'all 0.6s ease',  // Smooth transition for image size
+                        maxWidth: expanded ? '100px' : '30px',
+                        maxHeight: expanded ? '100px' : '30px',
+                        height: expanded ? '80px' : 'auto',
+                        width: expanded ? '80px' : 'auto',
+                    }}
+                />
 
-                    <Box>
-                        <img
-                            src={alumno.imageFile}
-                            alt="Preview"
-                            style={{
-                                transition: 'all 0.6s ease',  // Smooth transition for image size
-                                maxWidth: expanded ? '125px' : '50px',
-                                maxHeight: expanded ? '125px' : '50px',
-                                height: 'auto',
-                                width: 'auto',
-                            }}
-                        />
-                    </Box>
+            </Box>
+            <Box
+                sx={{
+                    position: 'absolute',  // Position this box absolutely in relation to its parent container
+                    top: 80,
+                    right: 45,
+                    borderRadius: '15px',
+                    opacity: expanded ? 1 : 0,
+                    visibility: expanded ? 'visible' : 'hidden',  // Keeps element in DOM but hides it
+                    transition: 'transform 0.5s ease, opacity 0.3s ease',  // Smooth transition effect
+               
+                }}
+            >
+                <img
+                    src={cursos29_logo}
+                    alt="Preview"
+                    style={{
+                        
+                        transition: 'all 0.6s ease',  // Smooth transition for image size
+                        maxWidth: expanded ? '100px' : '50px',
+                        maxHeight: expanded ? '100px' : '50px',
+                        height: expanded ? '100px' : 'auto',
+                        width: expanded ? '100px' : 'auto',
+                    }}
+                />
 
-                    {alumno.qrValue && (
-                        <Box
-                            id="qr-code"
-                            display="flex"
-                            justifyContent="center"
-                            sx={{
-                                position: expanded ? 'relative' : 'absolute',  // Position the QR code absolutely when expanded
-                                transform: expanded ? 'scale(1)' : 'scale(0.3)',
-                                opacity: expanded ? 1 : 0,
-                                visibility: expanded ? 'visible' : 'hidden',  // Keeps element in DOM but hides it
-                                transition: 'transform 0.5s ease, opacity 0.3s ease',  // Smooth transition effect
-                            }}
-                        >
-                            <QRCodeCanvas
-                                value={alumno.qrValue}
-                                size={125} // Keep a fixed size
-                            />
-                        </Box>
-                    )}
-                </Box>
-
+            </Box>
+            <Box>
                 <Box
+                    ref={ref}
                     sx={{
                         display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'flex-start',
-                        marginLeft: '20px',
-                        overflow: 'hidden',  // Prevents overflow in the entire box
+                        flexDirection: 'row',
+                        justifyContent: 'flex-start',
+                        alignItems: expanded ? 'flex-start' : 'center',
+                        width: '100%',  // Ensure the outer box doesn't allow overflow
+                        overflow: 'hidden',  // Prevent overflow
                     }}
                 >
-                    <Box sx={{ display: 'flex', flexDirection: expanded ? 'column' : 'row', transition: 'flex-direction 0.3s ease', columnGap: '0.5rem', alignItems: 'flex-start' }}>
-                        <Typography variant="h6" sx={{ fontSize: expanded ? '1.25rem' : '1.5rem' }} >{alumno.id}</Typography>
-                        <Typography sx={{ fontWeight: 'bold', fontSize: '1.5rem', display: expanded ? 'none' : 'flex' }}> - </Typography>
-                        <Typography
-                            sx={{
+                    <Box sx={{
+                        display: 'flex',
+                        backgroundColor: expanded ? 'RGB(237, 28, 36)' : 'none',
+                        flexDirection: 'column',
+                        justifyContent: 'space-evenly',
+                        alignItems: 'center',
+                        maxWidth: '100%',
+                        transition: 'all 0.6s ease', // Ensure width and height transitions smoothly
+                    }}>
 
-                                textAlign: 'left',
-                                whiteSpace: 'nowrap',      // Prevents text from wrapping
-                                overflow: 'hidden',        // Hides the overflowed text
-                                textOverflow: 'ellipsis',  // Adds ellipsis when text overflows
-                                width: '100%',
-                                fontSize: expanded ? '1.25rem' : '1.5rem'           // Makes Typography take full width of its container
-                            }}
-                            variant="h6"
-                        >
-                            {alumno.apellido + ", " + alumno.nombre}
-                        </Typography>
+                        <Box>
+                            <img
+                                src={alumno.imageFile}
+                                alt="Preview"
+                                style={{
+                                    transition: 'all 0.6s ease',  // Smooth transition for image size
+                                    maxWidth: expanded ? '100px' : '50px',
+                                    maxHeight: expanded ? '100px' : '50px',
+                                    height: expanded ? '100px' : 'auto',
+                                    width: expanded ? '100px' : 'auto',
+                                }}
+                            />
+                        </Box>
 
+                        {alumno.qrValue && (
+                            <Box
+                                id="qr-code"
+                                display="flex"
+                                justifyContent="center"
+                                sx={{
+                                    marginBottom:'0.3rem', marginTop:'0.85rem',
+                                    position: expanded ? 'relative' : 'absolute',  // Position the QR code absolutely when expanded
+                                    transform: expanded ? 'scale(1)' : 'scale(0.3)',
+                                    opacity: expanded ? 1 : 0,
+                                    visibility: expanded ? 'visible' : 'hidden',  // Keeps element in DOM but hides it
+                                    transition: 'transform 0.5s ease, opacity 0.3s ease',  // Smooth transition effect
+                                }}
+                            >
+                                <Box sx={{ backgroundColor: 'white', padding: '0.5rem', paddingBottom: '0.15' }}>
+                                    <QRCodeCanvas
+                                        value={alumno.qrValue}
+                                        size={70} // Keep a fixed size
+                                    />
+                                </Box>
+                            </Box>
+                        )}
+                        <Typography sx={{ marginBottom:'0.55rem', lineHeight: '2', color: 'white', fontSize: '0.65rem', fontWeight: 'bold', display: expanded ? "block" : "none" }}>
+                            ESCANEAR QR</Typography>
                     </Box>
-                    <Typography
+
+                    <Box
                         sx={{
-                            transition: 'opacity 0.3s ease, transform 1.5s ease',  // Smooth effect
-                            pointerEvents: expanded ? 'auto' : 'none',  // Prevents interaction when hidden
-                            position: expanded ? 'relative' : 'absolute',  // Position the QR code absolutely when expanded
-                            opacity: expanded ? 1 : 0,  // Hides when not expanded
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'flex-start',
+                            marginLeft: '20px',
+                            overflow: 'hidden',  // Prevents overflow in the entire box
                         }}
-                        variant="h6"
                     >
-                        {alumno.dni}
-                    </Typography>
-                    <Typography sx={{
-                        transition: 'opacity 0.3s ease, transform 1.5s ease',  // Smooth effect
-                        pointerEvents: expanded ? 'auto' : 'none',  // Prevents interaction when hidden
-                        position: expanded ? 'relative' : 'absolute',  // Position the QR code absolutely when expanded
-                        opacity: expanded ? 1 : 0,  // Hides when not expanded
-                    }} variant="h6">{alumno.fecha_emision}</Typography>
+                        <Typography sx={{ display: expanded ? 'block' : 'none', backgroundColor: 'black', color: 'white', fontSize: '0.75rem', padding: '0.2rem', paddingLeft: '.5rem', paddingRight: '0.5rem' }}>
+                            AUTORIZACION MANEJO SEGURO AUTOELEVADOR</Typography>
+                        <Box sx={{ display: 'flex', flexDirection: expanded ? 'column' : 'row', transition: 'flex-direction 0.3s ease', columnGap: '0.5rem', alignItems: 'flex-start', marginTop: '0.5rem' }}>
+                            <Typography variant="h6" sx={{ fontSize: '1.5rem', display: expanded ? 'none' : 'block' }} >{alumno.id}</Typography>
+                            <Typography sx={{ fontWeight: 'bold', fontSize: '1.5rem', display: expanded ? 'none' : 'flex' }}> - </Typography>
+                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                <PersonIcon sx={{ display: expanded ? 'block' : 'none' }} />
+                                <Typography
+                                    sx={{
+
+                                        textAlign: 'left',
+                                        whiteSpace: 'nowrap',      // Prevents text from wrapping
+                                        overflow: 'hidden',        // Hides the overflowed text
+                                        textOverflow: 'ellipsis',  // Adds ellipsis when text overflows
+                                        width: '100%',
+                                        fontSize: expanded ? '1.25rem' : '1.5rem',           // Makes Typography take full width of its container
+                                        fontWeight: expanded ? 'bold' : 'normal',
+                                        color: expanded ? 'RGB(237, 28, 36)' : 'black',
+                                    }}
+                                    variant="h6"
+                                >
+                                    {alumno.apellido + ", " + alumno.nombre}
+                                </Typography>
+                            </Box>
+
+                        </Box>
+                        <Box sx={{ display: expanded ? 'flex' : 'none', flexDirection: 'column', alignItems: 'flex-start', marginTop: '0.5rem' }}>
+
+                            <Typography
+                                sx={{
+                                    transition: 'opacity 0.3s ease, transform 1.5s ease',  // Smooth effect
+                                    pointerEvents: expanded ? 'auto' : 'none',  // Prevents interaction when hidden
+                                    position: expanded ? 'relative' : 'absolute',  // Position the QR code absolutely when expanded
+                                    fontSize: '1rem'
+                                }}
+                                variant="h6"
+                            >
+                                DNI: {alumno.dni.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}
+                            </Typography>
+                            <Typography sx={{
+                                transition: 'opacity 0.3s ease, transform 1.5s ease',  // Smooth effect
+                                pointerEvents: expanded ? 'auto' : 'none',  // Prevents interaction when hidden
+                                fontSize: '1rem'
+                            }} variant="h6">
+                                FECHA: {alumno.fecha_emision}</Typography>
+                            <Typography sx={{
+                                transition: 'opacity 0.3s ease, transform 1.5s ease',  // Smooth effect
+                                pointerEvents: expanded ? 'auto' : 'none',  // Prevents interaction when hidden
+                                fontWeight: 'bold',
+                                fontSize: '1rem',
+                                color: expanded ? 'RGB(237, 28, 36)' : 'black'
+
+                            }} variant="h6">
+                                VENCE: {alumno.fecha_vencimiento}</Typography>
+                            <Typography sx={{
+                                marginTop: '0.4rem',
+                                transition: 'opacity 0.3s ease, transform 1.5s ease',  // Smooth effect
+                                pointerEvents: expanded ? 'auto' : 'none',  // Prevents interaction when hidden
+                                fontSize: '0.75rem'
+                            }} variant="h6">
+                                Alcance: Vehículos hasta 3500 kg.</Typography>
+                            <Typography sx={{
+                                marginTop: '0.4rem',
+                                transition: 'opacity 0.3s ease, transform 1.5s ease',  // Smooth effect
+                                pointerEvents: expanded ? 'auto' : 'none',  // Prevents interaction when hidden
+                                fontSize: '0.85rem',
+                                fontWeight: 'bold'
+
+                            }} variant="h6">
+                                Instructor: Lic. Alan Guerrero</Typography>
+                        </Box>
+                    </Box>
                 </Box>
+            </Box>
+            <Box sx={{ backgroundColor: 'black', display: expanded ? 'flex' : 'none', alignItems: 'center', justifyContent: 'center', transition: 'all 2s ease', height: '1.5rem' }}>
+                <Typography sx={{ color: 'white', fontSize: '0.65rem', }}> En cumplimiento al Art. 12 de la Resolución 960/2015 de la S.R.T.</Typography>
             </Box>
             <Box>
                 {alumno.error && Object.keys(alumno.error).map((key) => {
@@ -569,7 +671,7 @@ const EditModal = ({ alumno, updateAlumno, open, handleClose, validateRow, setOp
         let updatedErrors = {}
 
         setChanged(true);
-        
+
 
         if (name === "fecha_emision") {
 

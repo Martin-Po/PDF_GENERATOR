@@ -1,8 +1,8 @@
 import { jsPDF } from "jspdf";
 import cursos29_logo from "../assets/cursos29_logo.png";
 import firmaPNG from "../assets/firma.png";
-import clark_logo from "../assets/clark_logo.png";
 import cursos29_logo2 from "../assets/cursos29_logo_2.png";
+import clark_logo from "../assets/clark_logo.png";
 import person_icon from "../assets/person_icon.png";
 import whatsapp_icon from "../assets/whatsapp_icon.png";
 import { montserratFont } from "../assets/fonts/Montserrat-Regular-normal";
