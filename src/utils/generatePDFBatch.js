@@ -27,6 +27,16 @@ export const generatePDFBatch = (csvData, download) => {
     pdf.addFont("Montserrat-Bold.ttf", "Montserrat", "bold");
 
 
+    const formatDate = (date) => {
+        console.log("Fecha: " + date);
+        
+        const formatedDate = new Date(date); // Ensure it's a Date object
+        const day = String(formatedDate.getUTCDate()).padStart(2, "0");
+        const month = String(formatedDate.getUTCMonth() + 1).padStart(2, "0");
+        const year = formatedDate.getUTCFullYear();
+        return (`${day}/${month}/${year}`);
+        }
+
     let y_correction = 0;
     csvData.map((alumno, index) => {
         
@@ -109,11 +119,11 @@ export const generatePDFBatch = (csvData, download) => {
         pdf.setFont("IBMPlex", "normal"); // Using normal (non-bold) for regular text
         pdf.setTextColor(109, 110, 113);
         pdf.text("DNI: " + alumno.dni.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."), position.x + 2.55, position.y + 2.205);
-        pdf.text("FECHA: " + alumno.fecha_1, position.x + 2.55, position.y + 2.595);
+        pdf.text("FECHA: " + formatDate(alumno.fecha_emision), position.x + 2.55, position.y + 2.595);
 
         pdf.setTextColor(237, 28, 36); // Red
         pdf.setFont("IBMPlex", "bold"); // Using normal (non-bold) for regular text 
-        pdf.text("VENCE: " + alumno.fecha_vencimiento, position.x + 2.55, position.y + 2.995);
+        pdf.text("VENCE: " + formatDate(alumno.fecha_vencimiento), position.x + 2.55, position.y + 2.995);
         pdf.setTextColor(109, 110, 113);
         pdf.setFont("IBMPlex", "normal"); // Using normal (non-bold) for regular text
         pdf.setFontSize(6);

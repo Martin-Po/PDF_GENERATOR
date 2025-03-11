@@ -78,7 +78,7 @@ const CSVPDFBatchGenerator = ({ csvData, setCsvData }) => {
                                     Object.keys(row).forEach((key) => {
                                         let formattedKey = key.toLowerCase().replace(/\s+/g, "_")
                                         if (key.toLowerCase().replace(/\s+/g, "_") === "fecha_1") {
-                                            formattedKey = "fecha_emision"
+                                            formattedKey = "auxFechaEmision"                                            
                                         }
                                         lowercaseRow[formattedKey] = row[key];
                                     });
@@ -111,8 +111,8 @@ const CSVPDFBatchGenerator = ({ csvData, setCsvData }) => {
                                     }
 
                                     lowercaseRow.error = validateRow(lowercaseRow); // Validate the row
-                                    if (!lowercaseRow.error.fecha_emision) {
-                                        const [day, month, year] = lowercaseRow.fecha_emision.split('/');
+                                    if (!lowercaseRow.error.auxFechaEmision) {
+                                        const [day, month, year] = lowercaseRow.auxFechaEmision.split('/');
                                         const date = new Date(`${year}-${month}-${day}`); // Ensures correct parsing
 
                                         const nextYear = new Date(date);
@@ -123,7 +123,18 @@ const CSVPDFBatchGenerator = ({ csvData, setCsvData }) => {
                                         const monthStr = String(nextYear.getUTCMonth() + 1).padStart(2, '0'); // Months are 0-based
                                         const yearStr = nextYear.getUTCFullYear();
 
-                                        lowercaseRow.fecha_vencimiento = `${dayStr}/${monthStr}/${yearStr}`;
+                                        lowercaseRow.auxFechaVencimiento = `${dayStr}/${monthStr}/${yearStr}`;
+
+                                        let [day2, month2, year2] = lowercaseRow.auxFechaEmision.split('/');
+                                        lowercaseRow.fecha_emision = `${year2}-${month2.padStart(2, '0')}-${day2.padStart(2, '0')}`;
+
+                                        if (lowercaseRow.auxFechaVencimiento?.split('/').length === 3) {
+
+                                            [day2, month2, year2] = lowercaseRow.auxFechaVencimiento.split('/');
+                                            lowercaseRow.fecha_vencimiento = `${year2}-${month2.padStart(2, '0')}-${day2.padStart(2, '0')}`;
+                                        }
+
+                                        
                                     }
                                     lowercaseRow.isValid = Object.keys(lowercaseRow.error).length === 0; // Check if the row is valid
 
@@ -199,14 +210,14 @@ const CSVPDFBatchGenerator = ({ csvData, setCsvData }) => {
         else {
             if (!/^\d{7,8}$/.test(row.dni)) newErrors.dni = "Formato DNI incorrecto. Debe ser xxxxxxx (solo números)";
         }
-        if (!/^\d{2}\/\d{2}\/\d{4}$/.test(row.fecha_emision)) {
-            newErrors.fecha_emision = "Formato fecha incorrecto. Debe ser DD/MM/AAAA";
+        if (!/^\d{2}\/\d{2}\/\d{4}$/.test(row.auxFechaEmision)) {
+            newErrors.auxFechaEmision = "Formato fecha incorrecto. Debe ser DD/MM/AAAA";
         } else {
             // Verifica si la fecha es válida
-            const [day, month, year] = row.fecha_emision.split('/').map(num => parseInt(num, 10));
+            const [day, month, year] = row.auxFechaEmision.split('/').map(num => parseInt(num, 10));
             const date = new Date(year, month - 1, day); // Mes en JavaScript empieza en 0
             if (date.getDate() !== day || date.getMonth() !== month - 1 || date.getFullYear() !== year) {
-                newErrors.fecha_emision = "Fecha no válida";
+                newErrors.auxFechaEmision = "Fecha no válida";
             }
         }
         if (row.imageFile === error_image) newErrors.url_de_img = "Error al cargar la imagen";
@@ -406,7 +417,7 @@ const PreviewCard = ({ alumno, removeAlumno, updateAlumno, validateRow, generate
             <Box
                 sx={{
                     position: 'absolute',  // Position this box absolutely in relation to its parent container
-                    bottom: 40,
+                    top: 150,
                     right: 20,
                     borderRadius: '15px',
                     opacity: expanded ? 1 : 0,
@@ -477,7 +488,7 @@ const PreviewCard = ({ alumno, removeAlumno, updateAlumno, validateRow, generate
                         transition: 'all 0.6s ease', // Ensure width and height transitions smoothly
                     }}>
 
-                        <Box>
+                        <Box sx={{backgroundColor:'white'}}>
                             <img
                                 src={alumno.imageFile}
                                 alt="Preview"
@@ -570,7 +581,7 @@ const PreviewCard = ({ alumno, removeAlumno, updateAlumno, validateRow, generate
                                 pointerEvents: expanded ? 'auto' : 'none',  // Prevents interaction when hidden
                                 fontSize: '1rem'
                             }} variant="h6">
-                                FECHA: {alumno.fecha_emision}</Typography>
+                                FECHA: {alumno.auxFechaEmision}</Typography>
                             <Typography sx={{
                                 transition: 'opacity 0.3s ease, transform 1.5s ease',  // Smooth effect
                                 pointerEvents: expanded ? 'auto' : 'none',  // Prevents interaction when hidden
@@ -579,7 +590,7 @@ const PreviewCard = ({ alumno, removeAlumno, updateAlumno, validateRow, generate
                                 color: expanded ? 'RGB(237, 28, 36)' : 'black'
 
                             }} variant="h6">
-                                VENCE: {alumno.fecha_vencimiento}</Typography>
+                                VENCE: {alumno.auxFechaVencimiento}</Typography>
                             <Typography sx={{
                                 marginTop: '0.4rem',
                                 transition: 'opacity 0.3s ease, transform 1.5s ease',  // Smooth effect
@@ -618,17 +629,17 @@ const PreviewCard = ({ alumno, removeAlumno, updateAlumno, validateRow, generate
 const EditModal = ({ alumno, updateAlumno, open, handleClose, validateRow, setOpen, generateQR, setHovered }) => {
 
 
-    let auxFechaEmision = ""
-    let auxFechaVencimiento = ""
+    let fecha_emision = ""
+    let fecha_vencimiento = ""
 
-    if (alumno.fecha_emision?.split('/').length === 3) {
-        let [day, month, year] = alumno.fecha_emision.split('/');
-        auxFechaEmision = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    if (alumno.auxFechaEmision?.split('/').length === 3) {
+        let [day, month, year] = alumno.auxFechaEmision.split('/');
+        fecha_emision = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
 
-        if (alumno.fecha_vencimiento?.split('/').length === 3) {
+        if (alumno.auxFechaVencimiento?.split('/').length === 3) {
 
-            [day, month, year] = alumno.fecha_vencimiento.split('/');
-            auxFechaVencimiento = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+            [day, month, year] = alumno.auxFechaVencimiento.split('/');
+            fecha_vencimiento = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
         }
     }
 
@@ -639,10 +650,10 @@ const EditModal = ({ alumno, updateAlumno, open, handleClose, validateRow, setOp
         nombre: alumno.nombre,
         apellido: alumno.apellido,
         dni: alumno.dni,
-        auxFechaEmision: auxFechaEmision,
-        auxFechaVencimiento: auxFechaVencimiento,
-        fecha_emision: alumno.fecha_emision,
-        fecha_vencimiento: alumno.fecha_vencimiento,
+        fecha_emision: fecha_emision,
+        fecha_vencimiento: fecha_vencimiento,
+        auxFechaEmision: alumno.auxFechaEmision,
+        auxFechaVencimiento: alumno.auxFechaVencimiento,
         imageUrl: alumno.url_de_img, // Store image URL
         imageFile: alumno.imageFile, // Store selected file
     });
@@ -654,10 +665,10 @@ const EditModal = ({ alumno, updateAlumno, open, handleClose, validateRow, setOp
             nombre: alumno.nombre,
             apellido: alumno.apellido,
             dni: alumno.dni,
-            auxFechaEmision: auxFechaEmision,
-            auxFechaVencimiento: auxFechaVencimiento,
-            fecha_emision: alumno.fecha_emision,
-            fecha_vencimiento: alumno.fecha_vencimiento,
+            fecha_emision: fecha_emision,
+            fecha_vencimiento: fecha_vencimiento,
+            auxFechaEmision: alumno.auxFechaEmision,
+            auxFechaVencimiento: alumno.auxFechaVencimiento,
             imageUrl: alumno.url_de_img, // Store image URL
             imageFile: alumno.imageFile, // Store selected file
         });
@@ -673,16 +684,16 @@ const EditModal = ({ alumno, updateAlumno, open, handleClose, validateRow, setOp
         setChanged(true);
 
 
-        if (name === "fecha_emision") {
+        if (name === "auxFechaEmision") {
 
             let [year, month, day] = value.split("-")
             const updatedFechaEmision = `${day}/${month}/${year}`
-            updatedErrors.error = validateRow({ ...alumno, fecha_emision: updatedFechaEmision });
+            updatedErrors.error = validateRow({ ...alumno, auxFechaEmision: updatedFechaEmision });
         }
-        else if (name === "fecha_vencimiento") {
+        else if (name === "auxFechaVencimiento") {
             let [year, month, day] = value.split("-")
             const updatedFechaVencimiento = `${day}/${month}/${year}`
-            updatedErrors.error = validateRow({ ...alumno, fecha_vencimiento: updatedFechaVencimiento });
+            updatedErrors.error = validateRow({ ...alumno, auxFechaVencimiento: updatedFechaVencimiento });
         }
         else {
             updatedErrors.error = validateRow({ ...alumno, [name]: value });
@@ -716,7 +727,7 @@ const EditModal = ({ alumno, updateAlumno, open, handleClose, validateRow, setOp
             case "dni":
                 break;
 
-            case "fecha_emision": {
+            case "auxFechaEmision": {
                 const date = new Date(value);
                 if (isNaN(date.getTime())) return;
 
@@ -731,17 +742,17 @@ const EditModal = ({ alumno, updateAlumno, open, handleClose, validateRow, setOp
 
                 setUpdatedAlumno((prev) => ({
                     ...prev,
-                    auxFechaEmision: value,
-                    fecha_emision: updatedFechaEmision,
-                    fecha_vencimiento: updatedFechaVencimiento,
-                    auxFechaVencimiento: nextYear.toISOString().split("T")[0],
+                    fecha_emision: value,
+                    auxFechaEmision: updatedFechaEmision,
+                    auxFechaVencimiento: updatedFechaVencimiento,
+                    fecha_vencimiento: nextYear.toISOString().split("T")[0],
                     error: updatedErrors.error,
                     isValid: updatedErrors.isValid
                 }));
                 return;
             }
 
-            case "fecha_vencimiento": {
+            case "auxFechaVencimiento": {
                 const date = new Date(value);
                 if (isNaN(date.getTime())) return;
 
@@ -752,8 +763,8 @@ const EditModal = ({ alumno, updateAlumno, open, handleClose, validateRow, setOp
 
                 setUpdatedAlumno((prev) => ({
                     ...prev,
-                    fecha_vencimiento: updatedFechaVencimiento,
-                    auxFechaVencimiento: value,
+                    auxFechaVencimiento: updatedFechaVencimiento,
+                    fecha_vencimiento: value,
                     error: updatedErrors.error,
                     isValid: updatedErrors.isValid
                 }));
@@ -837,9 +848,9 @@ const EditModal = ({ alumno, updateAlumno, open, handleClose, validateRow, setOp
                             fullWidth
                             InputLabelProps={{ shrink: true }}
                             label="Fecha Emisión"
-                            name="fecha_emision"
+                            name="auxFechaEmision"
                             type="date"
-                            value={updatedAlumno.auxFechaEmision}
+                            value={updatedAlumno.fecha_emision}
                             onChange={handleUpdateFormChange}
                             margin="normal"
                         />
@@ -847,9 +858,9 @@ const EditModal = ({ alumno, updateAlumno, open, handleClose, validateRow, setOp
                             fullWidth
                             InputLabelProps={{ shrink: true }}
                             label="Fecha Vencimiento"
-                            name="fecha_vencimiento"
+                            name="auxFechaVencimiento"
                             type="date"
-                            value={updatedAlumno.auxFechaVencimiento}
+                            value={updatedAlumno.fecha_vencimiento}
                             onChange={handleUpdateFormChange}
                             margin="normal"
                         />

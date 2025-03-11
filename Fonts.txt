@@ -1,0 +1,10 @@
+Subir archivo ttf a esta página. No cambiar ningún valor excepto fontsyle
+https://peckconsulting.s3.amazonaws.com/fontconverter/fontconverter.html
+Subir el archivo al poryect. Editar para que quede:
+export var ibmplexBoldFont ="xxxxxxxxxxxxxxxxxxx";
+
+Importarlo 
+	import { ibmplexFont } from "../assets/fonts/IBMPlexSans-Regular-normal";
+Crearlo   
+	pdf.addFileToVFS("IBMPlexSans-Regular.ttf", ibmplexFont);
+  	pdf.addFont("IBMPlexSans-Regular.ttf", "IBMPlex", "normal");

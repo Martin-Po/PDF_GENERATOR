@@ -74,6 +74,8 @@ export const generatePDF = (formData, download) => {
   };
 
   const formatDate = (date) => {
+    console.log("Fecha: " + date);
+    
     const formatedDate = new Date(date); // Ensure it's a Date object
     const day = String(formatedDate.getUTCDate()).padStart(2, "0");
     const month = String(formatedDate.getUTCMonth() + 1).padStart(2, "0");
@@ -129,6 +131,8 @@ export const generatePDF = (formData, download) => {
   
   pdf.setTextColor(237, 28, 36); // Red
   pdf.setFont("IBMPlex", "bold"); // Using normal (non-bold) for regular text 
+  console.log("Información: " + formData.fecha_vencimiento);
+  
   addCenterAlignedText(pdf, "VENCE: " + formatDate(formData.fecha_vencimiento), 11);
   
   
