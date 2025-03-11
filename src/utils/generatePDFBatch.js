@@ -147,8 +147,14 @@ export const generatePDFBatch = (csvData, download) => {
 
     if (download) {
         pdf.setProperties({ title: "Carnet.pdf" });
+        const now = new Date();
+        const options = { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit", hour12: false };
+        const formattedDate = now.toLocaleString("es-ES", options)
+            .replace(":", ".") // Reemplaza ":" por "." en la hora
+            .replace(" ", " de "); // Agrega "de" entre el día y el mes
 
-        const fileName = `${csvData.apellido}, ${csvData.nombre} - Carnet Res 960 SRT.pdf`;
+        const fileName = `Plantilla carnets para imprimir - ${formattedDate} hs.pdf`;
+
         pdf.save(fileName);
     } else {
         const pdfBlob = pdf.output("blob", { title: "Carnet.pdf" });
